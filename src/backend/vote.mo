@@ -4,6 +4,7 @@ module {
         idProposal: Nat;
         voter: Principal;
         vote: Bool;
+        votingPowah : Float;
     };
     
     // This function generates a new vote id
@@ -13,12 +14,13 @@ module {
     };
 
     // This function create the vote by given data
-    public func createVote(_id : Nat, _idProposal : Nat, _voter : Principal, _vote : Bool) : Vote {
+    public func createVote(_id : Nat, _idProposal : Nat, _voter : Principal, _vote : Bool, _votingPowah : Float) : Vote {
         {
             id = _id; 
             idProposal = _idProposal; 
             voter = _voter; 
-            vote = _vote
+            vote = _vote;
+            votingPowah = _votingPowah;
         };    
     }
 

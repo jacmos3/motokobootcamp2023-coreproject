@@ -5,7 +5,13 @@
   "backend": {
     "local": "rdmx6-jaaaa-aaaaa-aaadq-cai"
   },
+  "bootcamptoken": {
+    "local": "qaa6y-5yaaa-aaaaa-aaafa-cai"
+  },
   "frontend": {
     "local": "qoctq-giaaa-aaaaa-aaaea-cai"
+  },
+  "ledger": {
+    "local": "qhbym-qaaaa-aaaaa-aaafq-cai"
   }
 }

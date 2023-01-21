@@ -4,6 +4,7 @@ module {
         title: Text;
         description: Text;
         author: Principal;
+        winner: ?Bool;
     };
 
     // This function generates a new proposal id
@@ -13,12 +14,13 @@ module {
     };
 
     // This function create the proposal by given data
-    public func createProposal(_id : Nat, _title : Text, _description : Text, _author: Principal) : Proposal {
+    public func createProposal(_id : Nat, _title : Text, _description : Text, _author: Principal, _winner : ?Bool) : Proposal {
         {
             id = _id; 
             title = _title; 
             description = _description; 
-            author = _author
+            author = _author;
+            winner = _winner;
         };
     }
 

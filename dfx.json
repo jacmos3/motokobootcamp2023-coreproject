@@ -1,9 +1,13 @@
 {
   "canisters": {
     "backend": {
-      "main": "src/backend/main.mo",
+      "main": "src/backend/dao.mo",
       "type": "motoko"
     },
+
+    
+
+
     "frontend": {
       "dependencies": [
         "backend"
