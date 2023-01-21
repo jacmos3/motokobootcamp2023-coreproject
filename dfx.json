@@ -1,19 +1,8 @@
 {
   "canisters": {
     "backend": {
-      "main": "src/backend/main.mo",
+      "main": "src/backend/dao.mo",
       "type": "motoko"
-    },
-
-    "bootcamptoken": {
-      "main": "./src/bootcamptoken/main.mo",
-      "type": "motoko",
-      "remote": {
-        "candid": "src/bootcamptoken/bootcamptoken.did",
-        "id": {
-          "ic": "db3eq-6iaaa-aaaah-abz6a-cai"
-        }
-      }
     },
     "ledger": {
       "main": "src/ledger/main.mo",

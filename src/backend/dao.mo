@@ -56,7 +56,7 @@ actor dao{
         };
 
         // avoid voting from callers with less than 1 votingPowah
-        let _votingPowah : Float = await getVotingPowah(caller);
+        let _votingPowah : Nat = await getVotingPowah(caller);
         if (_votingPowah == 1)
             return null;
 
@@ -66,7 +66,7 @@ actor dao{
             return null;
         };
  
-        let proposalPowah : Float = checkProposalPowah(_proposalId);
+        let proposalPowah : Nat = checkProposalPowah(_proposalId);
         if (proposalPowah >= 100){
             return null;
         };
@@ -83,7 +83,7 @@ actor dao{
         ?voteId;
     };
 
-    func checkProposalPowah(_proposalId : Nat) : Float {
+    func checkProposalPowah(_proposalId : Nat) : Nat {
         var index : Nat = 0;
         let findId = func (v : Vote) : Bool {
             if (v.idProposal  == _proposalId) { 
@@ -96,7 +96,7 @@ actor dao{
         };
         let proposals :[Vote] = Array.filter(List.toArray(voteList), findId);
         var counter : Nat = 0;
-        var sum : Float = 0.0;
+        var sum : Nat = 0;
 
         while(index > counter){
             sum += proposals[counter].votingPowah;
@@ -132,11 +132,14 @@ actor dao{
         proposalList := brandNewList;
     };
 
-    //// #MOCKED: I havent figured out how to read the MB balance from a principal yet, 
-    //so I mock them for now: #TODO: fix this
-    func getVotingPowah (caller : Principal) : async Float {
-        let entropy = await Random.blob();
-        return  Float.fromInt(Nat8.toNat(Option.get<Nat8>(Random.Finite(entropy).byte(), 0)));
+    let Ledger : actor { 
+        icrc1_balance_of: {owner : Principal;} -> async Nat;
+    } = actor("r7inp-6aaaa-aaaaa-aaabq-cai");
+
+    func getVotingPowah (caller : Principal) : async Nat {
+        //MOCKED
+        return Nat8.toNat(Option.get<Nat8>(Random.Finite(await Random.blob()).byte(), 0));
+        //return await Ledger.icrc1_balance_of({ owner = caller; });
     };
 
     public query func get_all_votes() : async [Vote]{

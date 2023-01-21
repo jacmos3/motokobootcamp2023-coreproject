@@ -14,7 +14,7 @@ import Debug "mo:base/Debug";
 shared ({ caller = initializer }) actor class Ledger() = this {
 
   let token_name : Text = "Motoko Bootcamp 2023 Token";
-  let token_symbol : Text = "MB";
+  let token_symbol : Text = "MBT";
   let decimals : Nat8 = 18;
   let transfer_fee : Nat = 0;
 

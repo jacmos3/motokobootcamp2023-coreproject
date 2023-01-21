@@ -1,3 +1,25 @@
+type Vote = 
+ record {
+   id: nat;
+   idProposal: nat;
+   vote: bool;
+   voter: principal;
+   votingPowah: nat;
+ };
+type Proposal = 
+ record {
+   author: principal;
+   description: text;
+   id: nat;
+   title: text;
+   winner: opt bool;
+ };
 service : {
-  whoami: () -> (principal) query;
+  getVote: (nat) -> (vec Vote) query;
+  getVoteFromPrincipal: (principal, nat) -> (vec Vote) query;
+  get_all_proposals: () -> (vec Proposal) query;
+  get_all_votes: () -> (vec Vote) query;
+  get_proposal: (nat) -> (vec Proposal) query;
+  submit_proposal: (text, text) -> (nat);
+  vote: (nat, bool) -> (opt nat);
 }

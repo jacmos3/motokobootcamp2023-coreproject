@@ -4,7 +4,7 @@ type Vote =
    idProposal: nat;
    vote: bool;
    voter: principal;
-   votingPowah: float64;
+   votingPowah: nat;
  };
 type Proposal = 
  record {
