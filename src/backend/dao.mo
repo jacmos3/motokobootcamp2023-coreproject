@@ -7,6 +7,7 @@ import Random "mo:base/Random";
 import Option "mo:base/Option";
 import Float "mo:base/Float";
 import Nat8 "mo:base/Nat8";
+import Text "mo:base/Text";
 
 actor dao{
     type Proposal = Proposal.Proposal;
@@ -19,6 +20,11 @@ actor dao{
 
     // This function get in inputs the proposal data and add it to the list
     public shared ({caller}) func submit_proposal(_title : Text, _description : Text) : async Nat{
+        
+        if (Text.size(Text.trim(_title, #text " ")) == 0 or Text.size(Text.trim(_description, #text " ")) == 0 ){
+            return 0;
+        };
+
         proposalId := await Proposal.generateNewId(proposalId);
         let p : Proposal = Proposal.createProposal(proposalId, _title, _description, caller, null);
         proposalList :=  List.push(p, proposalList);
