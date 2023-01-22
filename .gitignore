@@ -102,3 +102,11 @@ dist
 
 # TernJS port file
 .tern-port
+
+
+**/.env.local**
+
+**/.dfx
+.gitignore
+**/src/.env.local
+.gitignore

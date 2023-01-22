@@ -26,6 +26,7 @@
     "@dfinity/agent": "^0.10.1",
     "@dfinity/auth-client": "^0.10.1",
     "@dfinity/identity": "^0.10.1",
+    "flowbite-svelte": "^0.29.11",
     "sirv-cli": "^1.0.0"
   }
 }

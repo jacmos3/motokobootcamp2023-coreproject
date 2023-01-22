@@ -144,8 +144,8 @@ actor dao{
 
     func getVotingPowah (caller : Principal) : async Nat {
         //MOCKED
-        return Nat8.toNat(Option.get<Nat8>(Random.Finite(await Random.blob()).byte(), 0));
-        //return await Ledger.icrc1_balance_of({ owner = caller; });
+        //return Nat8.toNat(Option.get<Nat8>(Random.Finite(await Random.blob()).byte(), 0));
+        return await Ledger.icrc1_balance_of({ owner = caller; });
     };
 
     public query func get_all_votes() : async [Vote]{

@@ -1,5 +1,6 @@
 :root {
-  --color-black: #161617;
+  --color-root:orange;
+  --color-button:gray;
 }
 
 html,
@@ -10,7 +11,7 @@ body {
 }
 
 body {
-  background-color: var(--color-black);
+  background-color: var(--color-root);
   color: white;
   margin: 0;
   padding: 8px;
@@ -32,7 +33,7 @@ a:hover {
 
 button {
   padding: 8px 32px;
-  color: var(--color-black);
+  color: var(--color-button);
   background-color: white;
   letter-spacing: 0.35px;
   appearance: none;

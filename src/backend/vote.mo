@@ -17,7 +17,7 @@ module {
     public func createVote(_id : Nat, _idProposal : Nat, _voter : Principal, _vote : Bool, _votingPowah : Nat) : Vote {
         {
             id = _id; 
-            idProposal = _idProposal; 
+            idProposal = _idProposal;
             voter = _voter; 
             vote = _vote;
             votingPowah = _votingPowah;

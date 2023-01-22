@@ -1,53 +1,35 @@
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://unpkg.com/tailwindcss@^1.0/dist/tailwind.min.css" rel="stylesheet">
+</head>
 <script>
-  import Auth from "./components/Auth.svelte";
-  import CanisterIds from "./components/CanisterIds.svelte";
-  import Links from "./components/Links.svelte";
-</script>
+  import {view} from "./views.js";
 
-<main>
-  <a
-    href="https://dfinity.org"
-    target="_blank"
-    rel="noopener noreferrer"
-    class="logo"
-  >
-    <img src="images/dfinity.svg" alt="DFINITY logo" />
-  </a>
-  <h1>Svelte Starter dApp</h1>
-  <Auth />
-  <Links />
-  <CanisterIds />
-</main>
+  import Header from "./components/head/Header.svelte"; 
+  import Home from "./components/Home.svelte";
+  import Vote from "./components/Vote.svelte";
+  import View from "./components/View.svelte";
+  import New from "./components/New.svelte";
 
-<style>
-  img {
-    height: 22px;
-  }
-  .logo {
-    display: inline-block;
-    margin-bottom: 64px;
-    margin-top: 24px;
-  }
+  </script>
 
-  main {
-    text-align: center;
-    padding: 1em;
-  }
+<div class="App">
+  <Header />
 
-  h1 {
-    text-transform: uppercase;
-    font-size: 3em;
-    font-weight: 400;
-    line-height: 1.09;
-  }
+  <div >
+    {#if $view.current === $view.home}
+      <Home />
+    {:else if $view.current === $view.view}
+      <View />
+    {:else if $view.current === $view.vote}
+      <Vote />
+    {:else if $view.current === $view.new}
+      <New />
+    {/if}
+  </div>
 
-  @media (min-width: 640px) {
-    main {
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    h1 {
-      font-size: 4em;
-    }
-  }
-</style>
+  <footer></footer>
+</div>
+
+
