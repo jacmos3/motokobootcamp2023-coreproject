@@ -15,11 +15,7 @@ export const idlFactory = ({ IDL }) => {
   });
   return IDL.Service({
     'getVote' : IDL.Func([IDL.Nat], [IDL.Vec(Vote)], ['query']),
-    'getVoteFromPrincipal' : IDL.Func(
-        [IDL.Principal, IDL.Nat],
-        [IDL.Vec(Vote)],
-        ['query'],
-      ),
+    'getVoteFromPrincipal' : IDL.Func([IDL.Nat], [IDL.Vec(Vote)], []),
     'get_all_proposals' : IDL.Func([], [IDL.Vec(Proposal)], ['query']),
     'get_all_votes' : IDL.Func([], [IDL.Vec(Vote)], ['query']),
     'get_proposal' : IDL.Func([IDL.Nat], [IDL.Vec(Proposal)], ['query']),

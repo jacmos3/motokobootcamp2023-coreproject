@@ -47,9 +47,12 @@ actor dao{
         let findId = func (x : Vote) : Bool { x.id  == _voteId };
         Array.filter(List.toArray(voteList), findId);
     };
+    public shared ({caller}) func getVoteFromPrincipal(_proposalId : Nat) : async [Vote]{
+         return await getVoteFrom(caller, _proposalId);
+    };
 
-    public query func getVoteFromPrincipal(_voter :Principal, _proposalId : Nat) : async [Vote]{
-        let findId = func (v : Vote) : Bool { v.voter  == _voter and v.idProposal == _proposalId};
+    private func getVoteFrom(caller:Principal, _proposalId : Nat) : async [Vote]{
+        let findId = func (v : Vote) : Bool { v.voter  == caller and v.idProposal == _proposalId};
         Array.filter(List.toArray(voteList), findId);
     };
 
@@ -67,8 +70,9 @@ actor dao{
             return null;
 
         // avoid voting from users already voted on the given proposal
-        let vot :[Vote] = await getVoteFromPrincipal(caller, _proposalId);
-        if (Array.equal([],vot, func (v1 :Vote, v2 :Vote) : Bool{return v1.id == v1.id }) == false){
+        let vot :[Vote] = await getVoteFrom(caller, _proposalId);
+        for(v in vot.vals()){
+            if (v.idProposal == _proposalId)
             return null;
         };
  
@@ -140,12 +144,13 @@ actor dao{
 
     let Ledger : actor { 
         icrc1_balance_of: {owner : Principal;} -> async Nat;
-    } = actor("r7inp-6aaaa-aaaaa-aaabq-cai");
+    } = actor("w3j54-iaaaa-aaaak-aeagq-cai");
 
     func getVotingPowah (caller : Principal) : async Nat {
         //MOCKED
-        //return Nat8.toNat(Option.get<Nat8>(Random.Finite(await Random.blob()).byte(), 0));
-        return await Ledger.icrc1_balance_of({ owner = caller; });
+        return Nat8.toNat(Option.get<Nat8>(Random.Finite(await Random.blob()).byte(), 0));
+        //return await Ledger.icrc1_balance_of({ owner = caller; });
+        //return 2;
     };
 
     public query func get_all_votes() : async [Vote]{

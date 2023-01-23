@@ -9,35 +9,31 @@ const daoCanisterId =
     ? "xdai7-gaaaa-aaaak-aeacq-cai" 
     : "xdai7-gaaaa-aaaak-aeacq-cai"; //IC
 
-// See https://docs.plugwallet.ooo/ for more informations
+    
 export async function plugConnection() {
   const result = await window.ic.plug.requestConnect({
     whitelist: [daoCanisterId],
-  });
+  })
   if (!result) {
-    throw new Error("User denied the connection");
+    throw new Error("User denied the connection")
   }
-  const p = await window.ic.plug.agent.getPrincipal();
-  p.id = await window.ic.plug.principalId;
+  const p = await window.ic.plug.agent.getPrincipal()
 
   const agent = new HttpAgent({
-    host: "https://ic0.app",
-/*      process.env.NODE_ENV === "development"
-        ? "http://localhost:5000"
-        : "https://ic0.app",*/
+    host: process.env.NODE_ENV === "development" ? "http://localhost:8000" : "https://ic0.app",
   });
 
   if (process.env.NODE_ENV === "development") {
     agent.fetchRootKey();
   }
 
-  const actor = Actor.createActor(idlFactoryDAO, {
-    agent,
-    canisterId: daoCanisterId,
+  const actor = await window.ic.plug.createActor ({
+    canisterId : daoCanisterId,
+    interfaceFactory : idlFactoryDAO,
   });
 
-  console.log(actor);
+  console.log(actor)
 
-  principal.update(() => p);
-  daoActor.update(() => actor);
+  principal.update(() => p)
+  daoActor.update((oldValue) => {return actor})
 }

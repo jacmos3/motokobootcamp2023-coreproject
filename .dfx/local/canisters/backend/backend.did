@@ -16,7 +16,7 @@ type Proposal =
  };
 service : {
   getVote: (nat) -> (vec Vote) query;
-  getVoteFromPrincipal: (principal, nat) -> (vec Vote) query;
+  getVoteFromPrincipal: (nat) -> (vec Vote);
   get_all_proposals: () -> (vec Proposal) query;
   get_all_votes: () -> (vec Vote) query;
   get_proposal: (nat) -> (vec Proposal) query;

@@ -1,5 +1,8 @@
 {
   "backend": {
     "ic": "xdai7-gaaaa-aaaak-aeacq-cai"
+  },
+  "ledger": {
+    "ic": "w3j54-iaaaa-aaaak-aeagq-cai"
   }
 }

@@ -37,10 +37,10 @@
     
           {#await promise}
             <p class="w-full" style="color: white">...waiting</p>
-          {:then proposal}
-            {#if proposal}
+          {:then p}
+            {#if p}
               <p class="w-full" style="color: white">
-                Proposal submitted: {proposal}
+                Proposal submitted, returned id: {p}!
               </p>
             {/if}
           {:catch error}
@@ -50,11 +50,11 @@
           <div class="flex w-full flex-wrap gap-y-4 justify-center">
             <input
               bind:value="{title}"
-              class="w-full border border-black px-2 py-2"
+              class="w-full border border-black text-black px-2 py-2"
               placeholder="Proposal title" />
             <textarea
               bind:value="{description}"
-              class="w-full border border-black px-2 py-2"
+              class="w-full border border-black text-black px-2 py-2"
               placeholder="Proposal description"></textarea>
             <button
               class="w-3/4 border bg-white px-4 py-2 text-black hover:border-none hover:bg-lime-400 hover:shadow-hard"

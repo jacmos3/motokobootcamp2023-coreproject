@@ -369,7 +369,7 @@ function make_dirty(component, i) {
     }
     component.$$.dirty[(i / 31) | 0] |= (1 << (i % 31));
 }
-function init$1(component, options, instance, create_fragment, not_equal, props, append_styles, dirty = [-1]) {
+function init(component, options, instance, create_fragment, not_equal, props, append_styles, dirty = [-1]) {
     const parent_component = current_component;
     set_current_component(component);
     const $$ = component.$$ = {
@@ -609,11 +609,7 @@ const idlFactory = ({ IDL }) => {
   });
   return IDL.Service({
     'getVote' : IDL.Func([IDL.Nat], [IDL.Vec(Vote)], ['query']),
-    'getVoteFromPrincipal' : IDL.Func(
-        [IDL.Principal, IDL.Nat],
-        [IDL.Vec(Vote)],
-        ['query'],
-      ),
+    'getVoteFromPrincipal' : IDL.Func([IDL.Nat], [IDL.Vec(Vote)], []),
     'get_all_proposals' : IDL.Func([], [IDL.Vec(Proposal)], ['query']),
     'get_all_votes' : IDL.Func([], [IDL.Vec(Vote)], ['query']),
     'get_proposal' : IDL.Func([IDL.Nat], [IDL.Vec(Proposal)], ['query']),
@@ -2720,7 +2716,7 @@ lookupTable['1'] = lookupTable.i;
  * @param input The input array to encode.
  * @returns A Base32 string encoding the input.
  */
-function encode$2(input) {
+function encode$1(input) {
     // How many bits will we skip from the first byte.
     let skip = 0;
     // 5 high bits, carry from one byte to the next.
@@ -2756,7 +2752,7 @@ function encode$2(input) {
 /**
  * @param input The base32 encoded string to decode.
  */
-function decode$2(input) {
+function decode$1(input) {
     // how many bits we have from the previous character.
     let skip = 0;
     // current byte we're producing.
@@ -3375,7 +3371,7 @@ const SELF_AUTHENTICATING_SUFFIX = 2;
 const ANONYMOUS_SUFFIX = 4;
 const fromHexString = (hexString) => { var _a; return new Uint8Array(((_a = hexString.match(/.{1,2}/g)) !== null && _a !== void 0 ? _a : []).map(byte => parseInt(byte, 16))); };
 const toHexString = (bytes) => bytes.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '');
-class Principal$1 {
+class Principal {
     constructor(_arr) {
         this._arr = _arr;
         this._isPrincipal = true;
@@ -3389,12 +3385,12 @@ class Principal$1 {
     }
     static from(other) {
         if (typeof other === 'string') {
-            return Principal$1.fromText(other);
+            return Principal.fromText(other);
         }
         else if (typeof other === 'object' &&
             other !== null &&
             other._isPrincipal === true) {
-            return new Principal$1(other._arr);
+            return new Principal(other._arr);
         }
         throw new Error(`Impossible to convert ${JSON.stringify(other)} to Principal.`);
     }
@@ -3403,7 +3399,7 @@ class Principal$1 {
     }
     static fromText(text) {
         const canisterIdNoDash = text.toLowerCase().replace(/-/g, '');
-        let arr = decode$2(canisterIdNoDash);
+        let arr = decode$1(canisterIdNoDash);
         arr = arr.slice(4, arr.length);
         const principal = new this(arr);
         if (principal.toText() !== text) {
@@ -3430,7 +3426,7 @@ class Principal$1 {
         const checksum = new Uint8Array(checksumArrayBuf);
         const bytes = Uint8Array.from(this._arr);
         const array = new Uint8Array([...checksum, ...bytes]);
-        const result = encode$2(array);
+        const result = encode$1(array);
         const matches = result.match(/.{1,5}/g);
         if (!matches) {
             // This should only happen if there's no character, which is unreachable.
@@ -3447,15 +3443,6 @@ class Principal$1 {
  * Concatenate multiple array buffers.
  * @param buffers The buffers to concatenate.
  */
-function concat$1(...buffers) {
-    const result = new Uint8Array(buffers.reduce((acc, curr) => acc + curr.byteLength, 0));
-    let index = 0;
-    for (const b of buffers) {
-        result.set(new Uint8Array(b), index);
-        index += b.byteLength;
-    }
-    return result;
-}
 /**
  * A class that abstracts a pipe-like ArrayBuffer.
  */
@@ -3528,35 +3515,6 @@ class PipeArrayBuffer {
     }
 }
 
-/**
- * Hashes a string to a number. Algorithm can be found here:
- * https://caml.inria.fr/pub/papers/garrigue-polymorphic_variants-ml98.pdf
- * @param s
- */
-function idlHash(s) {
-    const utf8encoder = new TextEncoder();
-    const array = utf8encoder.encode(s);
-    let h = 0;
-    for (const c of array) {
-        h = (h * 223 + c) % 2 ** 32;
-    }
-    return h;
-}
-/**
- *
- * @param label string
- * @returns number representing hashed label
- */
-function idlLabelToId(label) {
-    if (/^_\d+_$/.test(label) || /^_0x[0-9a-fA-F]+_$/.test(label)) {
-        const num = +label.slice(1, -1);
-        if (Number.isSafeInteger(num) && num >= 0 && num < 2 ** 32) {
-            return num;
-        }
-    }
-    return idlHash(label);
-}
-
 /* eslint-disable no-constant-condition */
 function eob() {
     throw new Error('unexpected end of buffer');
@@ -3611,22 +3569,6 @@ function lebEncode(value) {
     return pipe.buffer;
 }
 /**
- * Decode a leb encoded buffer into a bigint. The number will always be positive (does not
- * support signed leb encoding).
- * @param pipe A Buffer containing the leb encoded bits.
- */
-function lebDecode(pipe) {
-    let weight = BigInt(1);
-    let value = BigInt(0);
-    let byte;
-    do {
-        byte = safeReadUint8(pipe);
-        value += BigInt(byte & 0x7f).valueOf() * weight;
-        weight *= BigInt(128);
-    } while (byte >= 0x80);
-    return value;
-}
-/**
  * Encode a number (or bigint) into a Buffer, with support for negative numbers. The number
  * will be floored to the nearest integer.
  * @param value The number to encode.
@@ -3665,31 +3607,6 @@ function slebEncode(value) {
         }
     }
     return pipe.buffer;
-}
-/**
- * Decode a leb encoded buffer into a bigint. The number is decoded with support for negative
- * signed-leb encoding.
- * @param pipe A Buffer containing the signed leb encoded bits.
- */
-function slebDecode(pipe) {
-    // Get the size of the buffer, then cut a buffer of that size.
-    const pipeView = new Uint8Array(pipe.buffer);
-    let len = 0;
-    for (; len < pipeView.byteLength; len++) {
-        if (pipeView[len] < 0x80) {
-            // If it's a positive number, we reuse lebDecode.
-            if ((pipeView[len] & 0x40) === 0) {
-                return lebDecode(pipe);
-            }
-            break;
-        }
-    }
-    const bytes = new Uint8Array(safeRead(pipe, len + 1));
-    let value = BigInt(0);
-    for (let i = bytes.byteLength - 1; i >= 0; i--) {
-        value = value * BigInt(0x80) + BigInt(0x80 - (bytes[i] & 0x7f) - 1);
-    }
-    return -value - BigInt(1);
 }
 /**
  *
@@ -3759,125 +3676,6 @@ function readIntLE(pipe, byteLength) {
 }
 
 // tslint:disable:max-classes-per-file
-const magicNumber = 'DIDL';
-function zipWith(xs, ys, f) {
-    return xs.map((x, i) => f(x, ys[i]));
-}
-/**
- * An IDL Type Table, which precedes the data in the stream.
- */
-class TypeTable {
-    constructor() {
-        // List of types. Needs to be an array as the index needs to be stable.
-        this._typs = [];
-        this._idx = new Map();
-    }
-    has(obj) {
-        return this._idx.has(obj.name);
-    }
-    add(type, buf) {
-        const idx = this._typs.length;
-        this._idx.set(type.name, idx);
-        this._typs.push(buf);
-    }
-    merge(obj, knot) {
-        const idx = this._idx.get(obj.name);
-        const knotIdx = this._idx.get(knot);
-        if (idx === undefined) {
-            throw new Error('Missing type index for ' + obj);
-        }
-        if (knotIdx === undefined) {
-            throw new Error('Missing type index for ' + knot);
-        }
-        this._typs[idx] = this._typs[knotIdx];
-        // Delete the type.
-        this._typs.splice(knotIdx, 1);
-        this._idx.delete(knot);
-    }
-    encode() {
-        const len = lebEncode(this._typs.length);
-        const buf = concat$1(...this._typs);
-        return concat$1(len, buf);
-    }
-    indexOf(typeName) {
-        if (!this._idx.has(typeName)) {
-            throw new Error('Missing type index for ' + typeName);
-        }
-        return slebEncode(this._idx.get(typeName) || 0);
-    }
-}
-class Visitor {
-    visitType(t, data) {
-        throw new Error('Not implemented');
-    }
-    visitPrimitive(t, data) {
-        return this.visitType(t, data);
-    }
-    visitEmpty(t, data) {
-        return this.visitPrimitive(t, data);
-    }
-    visitBool(t, data) {
-        return this.visitPrimitive(t, data);
-    }
-    visitNull(t, data) {
-        return this.visitPrimitive(t, data);
-    }
-    visitReserved(t, data) {
-        return this.visitPrimitive(t, data);
-    }
-    visitText(t, data) {
-        return this.visitPrimitive(t, data);
-    }
-    visitNumber(t, data) {
-        return this.visitPrimitive(t, data);
-    }
-    visitInt(t, data) {
-        return this.visitNumber(t, data);
-    }
-    visitNat(t, data) {
-        return this.visitNumber(t, data);
-    }
-    visitFloat(t, data) {
-        return this.visitPrimitive(t, data);
-    }
-    visitFixedInt(t, data) {
-        return this.visitNumber(t, data);
-    }
-    visitFixedNat(t, data) {
-        return this.visitNumber(t, data);
-    }
-    visitPrincipal(t, data) {
-        return this.visitPrimitive(t, data);
-    }
-    visitConstruct(t, data) {
-        return this.visitType(t, data);
-    }
-    visitVec(t, ty, data) {
-        return this.visitConstruct(t, data);
-    }
-    visitOpt(t, ty, data) {
-        return this.visitConstruct(t, data);
-    }
-    visitRecord(t, fields, data) {
-        return this.visitConstruct(t, data);
-    }
-    visitTuple(t, components, data) {
-        const fields = components.map((ty, i) => [`_${i}_`, ty]);
-        return this.visitRecord(t, fields, data);
-    }
-    visitVariant(t, fields, data) {
-        return this.visitConstruct(t, data);
-    }
-    visitRec(t, ty, data) {
-        return this.visitConstruct(ty, data);
-    }
-    visitFunc(t, data) {
-        return this.visitConstruct(t, data);
-    }
-    visitService(t, data) {
-        return this.visitConstruct(t, data);
-    }
-}
 /**
  * Represents an IDL type.
  */
@@ -3921,205 +3719,6 @@ class ConstructType extends Type {
     }
     encodeType(typeTable) {
         return typeTable.indexOf(this.name);
-    }
-}
-/**
- * Represents an IDL Empty, a type which has no inhabitants.
- * Since no values exist for this type, it cannot be serialised or deserialised.
- * Result types like `Result<Text, Empty>` should always succeed.
- */
-class EmptyClass extends PrimitiveType {
-    accept(v, d) {
-        return v.visitEmpty(this, d);
-    }
-    covariant(x) {
-        return false;
-    }
-    encodeValue() {
-        throw new Error('Empty cannot appear as a function argument');
-    }
-    valueToString() {
-        throw new Error('Empty cannot appear as a value');
-    }
-    encodeType() {
-        return slebEncode(-17 /* Empty */);
-    }
-    decodeValue() {
-        throw new Error('Empty cannot appear as an output');
-    }
-    get name() {
-        return 'empty';
-    }
-}
-/**
- * Represents an IDL Bool
- */
-class BoolClass extends PrimitiveType {
-    accept(v, d) {
-        return v.visitBool(this, d);
-    }
-    covariant(x) {
-        return typeof x === 'boolean';
-    }
-    encodeValue(x) {
-        return new Uint8Array([x ? 1 : 0]);
-    }
-    encodeType() {
-        return slebEncode(-2 /* Bool */);
-    }
-    decodeValue(b, t) {
-        this.checkType(t);
-        switch (safeReadUint8(b)) {
-            case 0:
-                return false;
-            case 1:
-                return true;
-            default:
-                throw new Error('Boolean value out of range');
-        }
-    }
-    get name() {
-        return 'bool';
-    }
-}
-/**
- * Represents an IDL Null
- */
-class NullClass extends PrimitiveType {
-    accept(v, d) {
-        return v.visitNull(this, d);
-    }
-    covariant(x) {
-        return x === null;
-    }
-    encodeValue() {
-        return new ArrayBuffer(0);
-    }
-    encodeType() {
-        return slebEncode(-1 /* Null */);
-    }
-    decodeValue(b, t) {
-        this.checkType(t);
-        return null;
-    }
-    get name() {
-        return 'null';
-    }
-}
-/**
- * Represents an IDL Reserved
- */
-class ReservedClass extends PrimitiveType {
-    accept(v, d) {
-        return v.visitReserved(this, d);
-    }
-    covariant(x) {
-        return true;
-    }
-    encodeValue() {
-        return new ArrayBuffer(0);
-    }
-    encodeType() {
-        return slebEncode(-16 /* Reserved */);
-    }
-    decodeValue(b, t) {
-        if (t.name !== this.name) {
-            t.decodeValue(b, t);
-        }
-        return null;
-    }
-    get name() {
-        return 'reserved';
-    }
-}
-/**
- * Represents an IDL Text
- */
-class TextClass extends PrimitiveType {
-    accept(v, d) {
-        return v.visitText(this, d);
-    }
-    covariant(x) {
-        return typeof x === 'string';
-    }
-    encodeValue(x) {
-        const buf = new TextEncoder().encode(x);
-        const len = lebEncode(buf.byteLength);
-        return concat$1(len, buf);
-    }
-    encodeType() {
-        return slebEncode(-15 /* Text */);
-    }
-    decodeValue(b, t) {
-        this.checkType(t);
-        const len = lebDecode(b);
-        const buf = safeRead(b, Number(len));
-        const decoder = new TextDecoder('utf8', { fatal: true });
-        return decoder.decode(buf);
-    }
-    get name() {
-        return 'text';
-    }
-    valueToString(x) {
-        return '"' + x + '"';
-    }
-}
-/**
- * Represents an IDL Int
- */
-class IntClass extends PrimitiveType {
-    accept(v, d) {
-        return v.visitInt(this, d);
-    }
-    covariant(x) {
-        // We allow encoding of JavaScript plain numbers.
-        // But we will always decode to bigint.
-        return typeof x === 'bigint' || Number.isInteger(x);
-    }
-    encodeValue(x) {
-        return slebEncode(x);
-    }
-    encodeType() {
-        return slebEncode(-4 /* Int */);
-    }
-    decodeValue(b, t) {
-        this.checkType(t);
-        return slebDecode(b);
-    }
-    get name() {
-        return 'int';
-    }
-    valueToString(x) {
-        return x.toString();
-    }
-}
-/**
- * Represents an IDL Nat
- */
-class NatClass extends PrimitiveType {
-    accept(v, d) {
-        return v.visitNat(this, d);
-    }
-    covariant(x) {
-        // We allow encoding of JavaScript plain numbers.
-        // But we will always decode to bigint.
-        return (typeof x === 'bigint' && x >= BigInt(0)) || (Number.isInteger(x) && x >= 0);
-    }
-    encodeValue(x) {
-        return lebEncode(x);
-    }
-    encodeType() {
-        return slebEncode(-3 /* Nat */);
-    }
-    decodeValue(b, t) {
-        this.checkType(t);
-        return lebDecode(b);
-    }
-    get name() {
-        return 'nat';
-    }
-    valueToString(x) {
-        return x.toString();
     }
 }
 /**
@@ -4270,340 +3869,6 @@ class FixedNatClass extends PrimitiveType {
     }
 }
 /**
- * Represents an IDL Array
- * @param {Type} t
- */
-class VecClass extends ConstructType {
-    constructor(_type) {
-        super();
-        this._type = _type;
-        // If true, this vector is really a blob and we can just use memcpy.
-        this._blobOptimization = false;
-        if (_type instanceof FixedNatClass && _type.bits === 8) {
-            this._blobOptimization = true;
-        }
-    }
-    accept(v, d) {
-        return v.visitVec(this, this._type, d);
-    }
-    covariant(x) {
-        return Array.isArray(x) && x.every(v => this._type.covariant(v));
-    }
-    encodeValue(x) {
-        const len = lebEncode(x.length);
-        if (this._blobOptimization) {
-            return concat$1(len, new Uint8Array(x));
-        }
-        return concat$1(len, ...x.map(d => this._type.encodeValue(d)));
-    }
-    _buildTypeTableImpl(typeTable) {
-        this._type.buildTypeTable(typeTable);
-        const opCode = slebEncode(-19 /* Vector */);
-        const buffer = this._type.encodeType(typeTable);
-        typeTable.add(this, concat$1(opCode, buffer));
-    }
-    decodeValue(b, t) {
-        const vec = this.checkType(t);
-        if (!(vec instanceof VecClass)) {
-            throw new Error('Not a vector type');
-        }
-        const len = Number(lebDecode(b));
-        if (this._blobOptimization) {
-            return [...new Uint8Array(b.read(len))];
-        }
-        const rets = [];
-        for (let i = 0; i < len; i++) {
-            rets.push(this._type.decodeValue(b, vec._type));
-        }
-        return rets;
-    }
-    get name() {
-        return `vec ${this._type.name}`;
-    }
-    display() {
-        return `vec ${this._type.display()}`;
-    }
-    valueToString(x) {
-        const elements = x.map(e => this._type.valueToString(e));
-        return 'vec {' + elements.join('; ') + '}';
-    }
-}
-/**
- * Represents an IDL Option
- * @param {Type} t
- */
-class OptClass extends ConstructType {
-    constructor(_type) {
-        super();
-        this._type = _type;
-    }
-    accept(v, d) {
-        return v.visitOpt(this, this._type, d);
-    }
-    covariant(x) {
-        return Array.isArray(x) && (x.length === 0 || (x.length === 1 && this._type.covariant(x[0])));
-    }
-    encodeValue(x) {
-        if (x.length === 0) {
-            return new Uint8Array([0]);
-        }
-        else {
-            return concat$1(new Uint8Array([1]), this._type.encodeValue(x[0]));
-        }
-    }
-    _buildTypeTableImpl(typeTable) {
-        this._type.buildTypeTable(typeTable);
-        const opCode = slebEncode(-18 /* Opt */);
-        const buffer = this._type.encodeType(typeTable);
-        typeTable.add(this, concat$1(opCode, buffer));
-    }
-    decodeValue(b, t) {
-        const opt = this.checkType(t);
-        if (!(opt instanceof OptClass)) {
-            throw new Error('Not an option type');
-        }
-        switch (safeReadUint8(b)) {
-            case 0:
-                return [];
-            case 1:
-                return [this._type.decodeValue(b, opt._type)];
-            default:
-                throw new Error('Not an option value');
-        }
-    }
-    get name() {
-        return `opt ${this._type.name}`;
-    }
-    display() {
-        return `opt ${this._type.display()}`;
-    }
-    valueToString(x) {
-        if (x.length === 0) {
-            return 'null';
-        }
-        else {
-            return `opt ${this._type.valueToString(x[0])}`;
-        }
-    }
-}
-/**
- * Represents an IDL Record
- * @param {Object} [fields] - mapping of function name to Type
- */
-class RecordClass extends ConstructType {
-    constructor(fields = {}) {
-        super();
-        this._fields = Object.entries(fields).sort((a, b) => idlLabelToId(a[0]) - idlLabelToId(b[0]));
-    }
-    accept(v, d) {
-        return v.visitRecord(this, this._fields, d);
-    }
-    tryAsTuple() {
-        const res = [];
-        for (let i = 0; i < this._fields.length; i++) {
-            const [key, type] = this._fields[i];
-            if (key !== `_${i}_`) {
-                return null;
-            }
-            res.push(type);
-        }
-        return res;
-    }
-    covariant(x) {
-        return (typeof x === 'object' &&
-            this._fields.every(([k, t]) => {
-                // eslint-disable-next-line
-                if (!x.hasOwnProperty(k)) {
-                    throw new Error(`Record is missing key "${k}".`);
-                }
-                return t.covariant(x[k]);
-            }));
-    }
-    encodeValue(x) {
-        const values = this._fields.map(([key]) => x[key]);
-        const bufs = zipWith(this._fields, values, ([, c], d) => c.encodeValue(d));
-        return concat$1(...bufs);
-    }
-    _buildTypeTableImpl(T) {
-        this._fields.forEach(([_, value]) => value.buildTypeTable(T));
-        const opCode = slebEncode(-20 /* Record */);
-        const len = lebEncode(this._fields.length);
-        const fields = this._fields.map(([key, value]) => concat$1(lebEncode(idlLabelToId(key)), value.encodeType(T)));
-        T.add(this, concat$1(opCode, len, concat$1(...fields)));
-    }
-    decodeValue(b, t) {
-        const record = this.checkType(t);
-        if (!(record instanceof RecordClass)) {
-            throw new Error('Not a record type');
-        }
-        const x = {};
-        let idx = 0;
-        for (const [hash, type] of record._fields) {
-            if (idx >= this._fields.length || idlLabelToId(this._fields[idx][0]) !== idlLabelToId(hash)) {
-                // skip field
-                type.decodeValue(b, type);
-                continue;
-            }
-            const [expectKey, expectType] = this._fields[idx];
-            x[expectKey] = expectType.decodeValue(b, type);
-            idx++;
-        }
-        if (idx < this._fields.length) {
-            throw new Error('Cannot find field ' + this._fields[idx][0]);
-        }
-        return x;
-    }
-    get name() {
-        const fields = this._fields.map(([key, value]) => key + ':' + value.name);
-        return `record {${fields.join('; ')}}`;
-    }
-    display() {
-        const fields = this._fields.map(([key, value]) => key + ':' + value.display());
-        return `record {${fields.join('; ')}}`;
-    }
-    valueToString(x) {
-        const values = this._fields.map(([key]) => x[key]);
-        const fields = zipWith(this._fields, values, ([k, c], d) => k + '=' + c.valueToString(d));
-        return `record {${fields.join('; ')}}`;
-    }
-}
-/**
- * Represents Tuple, a syntactic sugar for Record.
- * @param {Type} components
- */
-class TupleClass extends RecordClass {
-    constructor(_components) {
-        const x = {};
-        _components.forEach((e, i) => (x['_' + i + '_'] = e));
-        super(x);
-        this._components = _components;
-    }
-    accept(v, d) {
-        return v.visitTuple(this, this._components, d);
-    }
-    covariant(x) {
-        // `>=` because tuples can be covariant when encoded.
-        return (Array.isArray(x) &&
-            x.length >= this._fields.length &&
-            this._components.every((t, i) => t.covariant(x[i])));
-    }
-    encodeValue(x) {
-        const bufs = zipWith(this._components, x, (c, d) => c.encodeValue(d));
-        return concat$1(...bufs);
-    }
-    decodeValue(b, t) {
-        const tuple = this.checkType(t);
-        if (!(tuple instanceof TupleClass)) {
-            throw new Error('not a tuple type');
-        }
-        if (tuple._components.length < this._components.length) {
-            throw new Error('tuple mismatch');
-        }
-        const res = [];
-        for (const [i, wireType] of tuple._components.entries()) {
-            if (i >= this._components.length) {
-                // skip value
-                wireType.decodeValue(b, wireType);
-            }
-            else {
-                res.push(this._components[i].decodeValue(b, wireType));
-            }
-        }
-        return res;
-    }
-    display() {
-        const fields = this._components.map(value => value.display());
-        return `record {${fields.join('; ')}}`;
-    }
-    valueToString(values) {
-        const fields = zipWith(this._components, values, (c, d) => c.valueToString(d));
-        return `record {${fields.join('; ')}}`;
-    }
-}
-/**
- * Represents an IDL Variant
- * @param {Object} [fields] - mapping of function name to Type
- */
-class VariantClass extends ConstructType {
-    constructor(fields = {}) {
-        super();
-        this._fields = Object.entries(fields).sort((a, b) => idlLabelToId(a[0]) - idlLabelToId(b[0]));
-    }
-    accept(v, d) {
-        return v.visitVariant(this, this._fields, d);
-    }
-    covariant(x) {
-        return (typeof x === 'object' &&
-            Object.entries(x).length === 1 &&
-            this._fields.every(([k, v]) => {
-                // eslint-disable-next-line
-                return !x.hasOwnProperty(k) || v.covariant(x[k]);
-            }));
-    }
-    encodeValue(x) {
-        for (let i = 0; i < this._fields.length; i++) {
-            const [name, type] = this._fields[i];
-            // eslint-disable-next-line
-            if (x.hasOwnProperty(name)) {
-                const idx = lebEncode(i);
-                const buf = type.encodeValue(x[name]);
-                return concat$1(idx, buf);
-            }
-        }
-        throw Error('Variant has no data: ' + x);
-    }
-    _buildTypeTableImpl(typeTable) {
-        this._fields.forEach(([, type]) => {
-            type.buildTypeTable(typeTable);
-        });
-        const opCode = slebEncode(-21 /* Variant */);
-        const len = lebEncode(this._fields.length);
-        const fields = this._fields.map(([key, value]) => concat$1(lebEncode(idlLabelToId(key)), value.encodeType(typeTable)));
-        typeTable.add(this, concat$1(opCode, len, ...fields));
-    }
-    decodeValue(b, t) {
-        const variant = this.checkType(t);
-        if (!(variant instanceof VariantClass)) {
-            throw new Error('Not a variant type');
-        }
-        const idx = Number(lebDecode(b));
-        if (idx >= variant._fields.length) {
-            throw Error('Invalid variant index: ' + idx);
-        }
-        const [wireHash, wireType] = variant._fields[idx];
-        for (const [key, expectType] of this._fields) {
-            if (idlLabelToId(wireHash) === idlLabelToId(key)) {
-                const value = expectType.decodeValue(b, wireType);
-                return { [key]: value };
-            }
-        }
-        throw new Error('Cannot find field hash ' + wireHash);
-    }
-    get name() {
-        const fields = this._fields.map(([key, type]) => key + ':' + type.name);
-        return `variant {${fields.join('; ')}}`;
-    }
-    display() {
-        const fields = this._fields.map(([key, type]) => key + (type.name === 'null' ? '' : `:${type.display()}`));
-        return `variant {${fields.join('; ')}}`;
-    }
-    valueToString(x) {
-        for (const [name, type] of this._fields) {
-            // eslint-disable-next-line
-            if (x.hasOwnProperty(name)) {
-                const value = type.valueToString(x[name]);
-                if (value === 'null') {
-                    return `variant {${name}}`;
-                }
-                else {
-                    return `variant {${name}=${value}}`;
-                }
-            }
-        }
-        throw new Error('Variant has no data: ' + x);
-    }
-}
-/**
  * Represents a reference to an IDL type, used for defining recursive data
  * types.
  */
@@ -4665,165 +3930,6 @@ class RecClass extends ConstructType {
     }
 }
 RecClass._counter = 0;
-function decodePrincipalId(b) {
-    const x = safeReadUint8(b);
-    if (x !== 1) {
-        throw new Error('Cannot decode principal');
-    }
-    const len = Number(lebDecode(b));
-    return Principal$1.fromUint8Array(new Uint8Array(safeRead(b, len)));
-}
-/**
- * Represents an IDL principal reference
- */
-class PrincipalClass extends PrimitiveType {
-    accept(v, d) {
-        return v.visitPrincipal(this, d);
-    }
-    covariant(x) {
-        return x && x._isPrincipal;
-    }
-    encodeValue(x) {
-        const buf = x.toUint8Array();
-        const len = lebEncode(buf.byteLength);
-        return concat$1(new Uint8Array([1]), len, buf);
-    }
-    encodeType() {
-        return slebEncode(-24 /* Principal */);
-    }
-    decodeValue(b, t) {
-        this.checkType(t);
-        return decodePrincipalId(b);
-    }
-    get name() {
-        return 'principal';
-    }
-    valueToString(x) {
-        return `${this.name} "${x.toText()}"`;
-    }
-}
-/**
- * Represents an IDL function reference.
- * @param argTypes Argument types.
- * @param retTypes Return types.
- * @param annotations Function annotations.
- */
-class FuncClass extends ConstructType {
-    constructor(argTypes, retTypes, annotations = []) {
-        super();
-        this.argTypes = argTypes;
-        this.retTypes = retTypes;
-        this.annotations = annotations;
-    }
-    static argsToString(types, v) {
-        if (types.length !== v.length) {
-            throw new Error('arity mismatch');
-        }
-        return '(' + types.map((t, i) => t.valueToString(v[i])).join(', ') + ')';
-    }
-    accept(v, d) {
-        return v.visitFunc(this, d);
-    }
-    covariant(x) {
-        return (Array.isArray(x) && x.length === 2 && x[0] && x[0]._isPrincipal && typeof x[1] === 'string');
-    }
-    encodeValue([principal, methodName]) {
-        const buf = principal.toUint8Array();
-        const len = lebEncode(buf.byteLength);
-        const canister = concat$1(new Uint8Array([1]), len, buf);
-        const method = new TextEncoder().encode(methodName);
-        const methodLen = lebEncode(method.byteLength);
-        return concat$1(new Uint8Array([1]), canister, methodLen, method);
-    }
-    _buildTypeTableImpl(T) {
-        this.argTypes.forEach(arg => arg.buildTypeTable(T));
-        this.retTypes.forEach(arg => arg.buildTypeTable(T));
-        const opCode = slebEncode(-22 /* Func */);
-        const argLen = lebEncode(this.argTypes.length);
-        const args = concat$1(...this.argTypes.map(arg => arg.encodeType(T)));
-        const retLen = lebEncode(this.retTypes.length);
-        const rets = concat$1(...this.retTypes.map(arg => arg.encodeType(T)));
-        const annLen = lebEncode(this.annotations.length);
-        const anns = concat$1(...this.annotations.map(a => this.encodeAnnotation(a)));
-        T.add(this, concat$1(opCode, argLen, args, retLen, rets, annLen, anns));
-    }
-    decodeValue(b) {
-        const x = safeReadUint8(b);
-        if (x !== 1) {
-            throw new Error('Cannot decode function reference');
-        }
-        const canister = decodePrincipalId(b);
-        const mLen = Number(lebDecode(b));
-        const buf = safeRead(b, mLen);
-        const decoder = new TextDecoder('utf8', { fatal: true });
-        const method = decoder.decode(buf);
-        return [canister, method];
-    }
-    get name() {
-        const args = this.argTypes.map(arg => arg.name).join(', ');
-        const rets = this.retTypes.map(arg => arg.name).join(', ');
-        const annon = ' ' + this.annotations.join(' ');
-        return `(${args}) -> (${rets})${annon}`;
-    }
-    valueToString([principal, str]) {
-        return `func "${principal.toText()}".${str}`;
-    }
-    display() {
-        const args = this.argTypes.map(arg => arg.display()).join(', ');
-        const rets = this.retTypes.map(arg => arg.display()).join(', ');
-        const annon = ' ' + this.annotations.join(' ');
-        return `(${args}) → (${rets})${annon}`;
-    }
-    encodeAnnotation(ann) {
-        if (ann === 'query') {
-            return new Uint8Array([1]);
-        }
-        else if (ann === 'oneway') {
-            return new Uint8Array([2]);
-        }
-        else {
-            throw new Error('Illeagal function annotation');
-        }
-    }
-}
-class ServiceClass extends ConstructType {
-    constructor(fields) {
-        super();
-        this._fields = Object.entries(fields).sort((a, b) => idlLabelToId(a[0]) - idlLabelToId(b[0]));
-    }
-    accept(v, d) {
-        return v.visitService(this, d);
-    }
-    covariant(x) {
-        return x && x._isPrincipal;
-    }
-    encodeValue(x) {
-        const buf = x.toUint8Array();
-        const len = lebEncode(buf.length);
-        return concat$1(new Uint8Array([1]), len, buf);
-    }
-    _buildTypeTableImpl(T) {
-        this._fields.forEach(([_, func]) => func.buildTypeTable(T));
-        const opCode = slebEncode(-23 /* Service */);
-        const len = lebEncode(this._fields.length);
-        const meths = this._fields.map(([label, func]) => {
-            const labelBuf = new TextEncoder().encode(label);
-            const labelLen = lebEncode(labelBuf.length);
-            return concat$1(labelLen, labelBuf, func.encodeType(T));
-        });
-        T.add(this, concat$1(opCode, len, ...meths));
-    }
-    decodeValue(b) {
-        return decodePrincipalId(b);
-    }
-    get name() {
-        const fields = this._fields.map(([key, value]) => key + ':' + value.name);
-        return `service {${fields.join('; ')}}`;
-    }
-    valueToString(x) {
-        return `service "${x.toText()}"`;
-    }
-}
 /**
  *
  * @param x
@@ -4832,366 +3938,16 @@ class ServiceClass extends ConstructType {
 function toReadableString(x) {
     return JSON.stringify(x, (_key, value) => typeof value === 'bigint' ? `BigInt(${value})` : value);
 }
-/**
- * Encode a array of values
- * @param argTypes
- * @param args
- * @returns {Buffer} serialised value
- */
-function encode$1(argTypes, args) {
-    if (args.length < argTypes.length) {
-        throw Error('Wrong number of message arguments');
-    }
-    const typeTable = new TypeTable();
-    argTypes.forEach(t => t.buildTypeTable(typeTable));
-    const magic = new TextEncoder().encode(magicNumber);
-    const table = typeTable.encode();
-    const len = lebEncode(args.length);
-    const typs = concat$1(...argTypes.map(t => t.encodeType(typeTable)));
-    const vals = concat$1(...zipWith(argTypes, args, (t, x) => {
-        if (!t.covariant(x)) {
-            throw new Error(`Invalid ${t.display()} argument: ${toReadableString(x)}`);
-        }
-        return t.encodeValue(x);
-    }));
-    return concat$1(magic, table, len, typs, vals);
-}
-/**
- * Decode a binary value
- * @param retTypes - Types expected in the buffer.
- * @param bytes - hex-encoded string, or buffer.
- * @returns Value deserialised to JS type
- */
-function decode$1(retTypes, bytes) {
-    const b = new PipeArrayBuffer(bytes);
-    if (bytes.byteLength < magicNumber.length) {
-        throw new Error('Message length smaller than magic number');
-    }
-    const magicBuffer = safeRead(b, magicNumber.length);
-    const magic = new TextDecoder().decode(magicBuffer);
-    if (magic !== magicNumber) {
-        throw new Error('Wrong magic number: ' + JSON.stringify(magic));
-    }
-    function readTypeTable(pipe) {
-        const typeTable = [];
-        const len = Number(lebDecode(pipe));
-        for (let i = 0; i < len; i++) {
-            const ty = Number(slebDecode(pipe));
-            switch (ty) {
-                case -18 /* Opt */:
-                case -19 /* Vector */: {
-                    const t = Number(slebDecode(pipe));
-                    typeTable.push([ty, t]);
-                    break;
-                }
-                case -20 /* Record */:
-                case -21 /* Variant */: {
-                    const fields = [];
-                    let objectLength = Number(lebDecode(pipe));
-                    let prevHash;
-                    while (objectLength--) {
-                        const hash = Number(lebDecode(pipe));
-                        if (hash >= Math.pow(2, 32)) {
-                            throw new Error('field id out of 32-bit range');
-                        }
-                        if (typeof prevHash === 'number' && prevHash >= hash) {
-                            throw new Error('field id collision or not sorted');
-                        }
-                        prevHash = hash;
-                        const t = Number(slebDecode(pipe));
-                        fields.push([hash, t]);
-                    }
-                    typeTable.push([ty, fields]);
-                    break;
-                }
-                case -22 /* Func */: {
-                    for (let k = 0; k < 2; k++) {
-                        let funcLength = Number(lebDecode(pipe));
-                        while (funcLength--) {
-                            slebDecode(pipe);
-                        }
-                    }
-                    const annLen = Number(lebDecode(pipe));
-                    safeRead(pipe, annLen);
-                    typeTable.push([ty, undefined]);
-                    break;
-                }
-                case -23 /* Service */: {
-                    let servLength = Number(lebDecode(pipe));
-                    while (servLength--) {
-                        const l = Number(lebDecode(pipe));
-                        safeRead(pipe, l);
-                        slebDecode(pipe);
-                    }
-                    typeTable.push([ty, undefined]);
-                    break;
-                }
-                default:
-                    throw new Error('Illegal op_code: ' + ty);
-            }
-        }
-        const rawList = [];
-        const length = Number(lebDecode(pipe));
-        for (let i = 0; i < length; i++) {
-            rawList.push(Number(slebDecode(pipe)));
-        }
-        return [typeTable, rawList];
-    }
-    const [rawTable, rawTypes] = readTypeTable(b);
-    if (rawTypes.length < retTypes.length) {
-        throw new Error('Wrong number of return values');
-    }
-    const table = rawTable.map(_ => Rec());
-    function getType(t) {
-        if (t < -24) {
-            throw new Error('future value not supported');
-        }
-        if (t < 0) {
-            switch (t) {
-                case -1:
-                    return Null;
-                case -2:
-                    return Bool;
-                case -3:
-                    return Nat;
-                case -4:
-                    return Int;
-                case -5:
-                    return Nat8;
-                case -6:
-                    return Nat16;
-                case -7:
-                    return Nat32;
-                case -8:
-                    return Nat64;
-                case -9:
-                    return Int8;
-                case -10:
-                    return Int16;
-                case -11:
-                    return Int32;
-                case -12:
-                    return Int64;
-                case -13:
-                    return Float32;
-                case -14:
-                    return Float64;
-                case -15:
-                    return Text;
-                case -16:
-                    return Reserved;
-                case -17:
-                    return Empty;
-                case -24:
-                    return Principal;
-                default:
-                    throw new Error('Illegal op_code: ' + t);
-            }
-        }
-        if (t >= rawTable.length) {
-            throw new Error('type index out of range');
-        }
-        return table[t];
-    }
-    function buildType(entry) {
-        switch (entry[0]) {
-            case -19 /* Vector */: {
-                const ty = getType(entry[1]);
-                return Vec(ty);
-            }
-            case -18 /* Opt */: {
-                const ty = getType(entry[1]);
-                return Opt(ty);
-            }
-            case -20 /* Record */: {
-                const fields = {};
-                for (const [hash, ty] of entry[1]) {
-                    const name = `_${hash}_`;
-                    fields[name] = getType(ty);
-                }
-                const record = Record(fields);
-                const tuple = record.tryAsTuple();
-                if (Array.isArray(tuple)) {
-                    return Tuple(...tuple);
-                }
-                else {
-                    return record;
-                }
-            }
-            case -21 /* Variant */: {
-                const fields = {};
-                for (const [hash, ty] of entry[1]) {
-                    const name = `_${hash}_`;
-                    fields[name] = getType(ty);
-                }
-                return Variant(fields);
-            }
-            case -22 /* Func */: {
-                return Func([], [], []);
-            }
-            case -23 /* Service */: {
-                return Service({});
-            }
-            default:
-                throw new Error('Illegal op_code: ' + entry[0]);
-        }
-    }
-    rawTable.forEach((entry, i) => {
-        const t = buildType(entry);
-        table[i].fill(t);
-    });
-    const types = rawTypes.map(t => getType(t));
-    const output = retTypes.map((t, i) => {
-        return t.decodeValue(b, types[i]);
-    });
-    // skip unused values
-    for (let ind = retTypes.length; ind < types.length; ind++) {
-        types[ind].decodeValue(b, types[ind]);
-    }
-    if (b.byteLength > 0) {
-        throw new Error('decode: Left-over bytes');
-    }
-    return output;
-}
-// Export Types instances.
-const Empty = new EmptyClass();
-const Reserved = new ReservedClass();
-const Bool = new BoolClass();
-const Null = new NullClass();
-const Text = new TextClass();
-const Int = new IntClass();
-const Nat = new NatClass();
-const Float32 = new FloatClass(32);
-const Float64 = new FloatClass(64);
-const Int8 = new FixedIntClass(8);
-const Int16 = new FixedIntClass(16);
-const Int32 = new FixedIntClass(32);
-const Int64 = new FixedIntClass(64);
-const Nat8 = new FixedNatClass(8);
-const Nat16 = new FixedNatClass(16);
-const Nat32 = new FixedNatClass(32);
-const Nat64 = new FixedNatClass(64);
-const Principal = new PrincipalClass();
-/**
- *
- * @param types array of any types
- * @returns TupleClass from those types
- */
-function Tuple(...types) {
-    return new TupleClass(types);
-}
-/**
- *
- * @param t IDL Type
- * @returns VecClass from that type
- */
-function Vec(t) {
-    return new VecClass(t);
-}
-/**
- *
- * @param t IDL Type
- * @returns OptClass of Type
- */
-function Opt(t) {
-    return new OptClass(t);
-}
-/**
- *
- * @param t Record of string and IDL Type
- * @returns RecordClass of string and Type
- */
-function Record(t) {
-    return new RecordClass(t);
-}
-/**
- *
- * @param fields Record of string and IDL Type
- * @returns VariantClass
- */
-function Variant(fields) {
-    return new VariantClass(fields);
-}
-/**
- *
- * @returns new RecClass
- */
-function Rec() {
-    return new RecClass();
-}
-/**
- *
- * @param args array of IDL Types
- * @param ret array of IDL Types
- * @param annotations array of strings, [] by default
- * @returns new FuncClass
- */
-function Func(args, ret, annotations = []) {
-    return new FuncClass(args, ret, annotations);
-}
-/**
- *
- * @param t Record of string and FuncClass
- * @returns ServiceClass
- */
-function Service(t) {
-    return new ServiceClass(t);
-}
-
-var IDL = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    Visitor: Visitor,
-    Type: Type,
-    PrimitiveType: PrimitiveType,
-    ConstructType: ConstructType,
-    EmptyClass: EmptyClass,
-    BoolClass: BoolClass,
-    NullClass: NullClass,
-    ReservedClass: ReservedClass,
-    TextClass: TextClass,
-    IntClass: IntClass,
-    NatClass: NatClass,
-    FloatClass: FloatClass,
-    FixedIntClass: FixedIntClass,
-    FixedNatClass: FixedNatClass,
-    VecClass: VecClass,
-    OptClass: OptClass,
-    RecordClass: RecordClass,
-    TupleClass: TupleClass,
-    VariantClass: VariantClass,
-    RecClass: RecClass,
-    PrincipalClass: PrincipalClass,
-    FuncClass: FuncClass,
-    ServiceClass: ServiceClass,
-    encode: encode$1,
-    decode: decode$1,
-    Empty: Empty,
-    Reserved: Reserved,
-    Bool: Bool,
-    Null: Null,
-    Text: Text,
-    Int: Int,
-    Nat: Nat,
-    Float32: Float32,
-    Float64: Float64,
-    Int8: Int8,
-    Int16: Int16,
-    Int32: Int32,
-    Int64: Int64,
-    Nat8: Nat8,
-    Nat16: Nat16,
-    Nat32: Nat32,
-    Nat64: Nat64,
-    Principal: Principal,
-    Tuple: Tuple,
-    Vec: Vec,
-    Opt: Opt,
-    Record: Record,
-    Variant: Variant,
-    Rec: Rec,
-    Func: Func,
-    Service: Service
-});
+new FloatClass(32);
+new FloatClass(64);
+new FixedIntClass(8);
+new FixedIntClass(16);
+new FixedIntClass(32);
+new FixedIntClass(64);
+new FixedNatClass(8);
+new FixedNatClass(16);
+new FixedNatClass(32);
+new FixedNatClass(64);
 
 var bignumber = createCommonjsModule(function (module) {
 (function (globalObject) {
@@ -11417,13 +10173,6 @@ function concat(...buffers) {
     }
     return result.buffer;
 }
-/**
- * Transforms a buffer to an hexadecimal string. This will use the buffer as an Uint8Array.
- * @param buffer The buffer to return the hexadecimal string of.
- */
-function toHex(buffer) {
-    return [...new Uint8Array(buffer)].map(x => x.toString(16).padStart(2, '0')).join('');
-}
 const hexRe = /^([0-9A-F]{2})*$/i.compile();
 /**
  * Transforms a hexadecimal string into an array buffer.
@@ -11551,7 +10300,7 @@ function requestIdOf(request) {
 new TextEncoder().encode('\x0Aic-request');
 class AnonymousIdentity {
     getPrincipal() {
-        return Principal$1.anonymous();
+        return Principal.anonymous();
     }
     async transformRequest(request) {
         return Object.assign(Object.assign({}, request), { body: { content: request.body } });
@@ -12366,11 +11115,11 @@ class HttpAgent {
     }
     async call(canisterId, options, identity) {
         const id = (await (identity !== undefined ? await identity : await this._identity));
-        const canister = Principal$1.from(canisterId);
+        const canister = Principal.from(canisterId);
         const ecid = options.effectiveCanisterId
-            ? Principal$1.from(options.effectiveCanisterId)
+            ? Principal.from(options.effectiveCanisterId)
             : canister;
-        const sender = id.getPrincipal() || Principal$1.anonymous();
+        const sender = id.getPrincipal() || Principal.anonymous();
         const submit = {
             request_type: SubmitRequestType.Call,
             canister_id: canister,
@@ -12414,8 +11163,8 @@ class HttpAgent {
     }
     async query(canisterId, fields, identity) {
         const id = await (identity !== undefined ? await identity : await this._identity);
-        const canister = typeof canisterId === 'string' ? Principal$1.fromText(canisterId) : canisterId;
-        const sender = (id === null || id === void 0 ? void 0 : id.getPrincipal()) || Principal$1.anonymous();
+        const canister = typeof canisterId === 'string' ? Principal.fromText(canisterId) : canisterId;
+        const sender = (id === null || id === void 0 ? void 0 : id.getPrincipal()) || Principal.anonymous();
         const request = {
             request_type: "query" /* Query */,
             canister_id: canister,
@@ -12446,9 +11195,9 @@ class HttpAgent {
         return decode(await response.arrayBuffer());
     }
     async readState(canisterId, fields, identity) {
-        const canister = typeof canisterId === 'string' ? Principal$1.fromText(canisterId) : canisterId;
+        const canister = typeof canisterId === 'string' ? Principal.fromText(canisterId) : canisterId;
         const id = await (identity !== undefined ? await identity : await this._identity);
-        const sender = (id === null || id === void 0 ? void 0 : id.getPrincipal()) || Principal$1.anonymous();
+        const sender = (id === null || id === void 0 ? void 0 : id.getPrincipal()) || Principal.anonymous();
         // TODO: remove this any. This can be a Signed or UnSigned request.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let transformedRequest = await this._transform({
@@ -12521,76 +11270,6 @@ var ProxyMessageKind;
     ProxyMessageKind["StatusResponse"] = "sr";
 })(ProxyMessageKind || (ProxyMessageKind = {}));
 
-function getDefaultAgent() {
-    const agent = typeof window === 'undefined'
-        ? typeof global === 'undefined'
-            ? typeof self === 'undefined'
-                ? undefined
-                : self.ic.agent
-            : global.ic.agent
-        : window.ic.agent;
-    if (!agent) {
-        throw new Error('No Agent could be found.');
-    }
-    return agent;
-}
-
-/**
- * This file is generated from the candid for asset management.
- */
-/* tslint:disable */
-// @ts-ignore
-var managementCanisterIdl = ({ IDL }) => {
-    const canister_id = IDL.Principal;
-    const wasm_module = IDL.Vec(IDL.Nat8);
-    const CanisterSettings = IDL.Record({
-        compute_allocation: IDL.Opt(IDL.Nat),
-        memory_allocation: IDL.Opt(IDL.Nat),
-    });
-    return IDL.Service({
-        provisional_create_canister_with_cycles: IDL.Func([IDL.Record({ amount: IDL.Opt(IDL.Nat), settings: IDL.Opt(CanisterSettings) })], [IDL.Record({ canister_id: canister_id })], []),
-        create_canister: IDL.Func([], [IDL.Record({ canister_id: canister_id })], []),
-        install_code: IDL.Func([
-            IDL.Record({
-                mode: IDL.Variant({ install: IDL.Null, reinstall: IDL.Null, upgrade: IDL.Null }),
-                canister_id: canister_id,
-                wasm_module: wasm_module,
-                arg: IDL.Vec(IDL.Nat8),
-            }),
-        ], [], []),
-        set_controller: IDL.Func([IDL.Record({ canister_id: canister_id, new_controller: IDL.Principal })], [], []),
-    });
-};
-
-/* tslint:enable */
-/**
- * Create a management canister actor.
- * @param config
- */
-function getManagementCanister(config) {
-    function transform(methodName, args, callConfig) {
-        const first = args[0];
-        let effectiveCanisterId = Principal$1.fromHex('');
-        if (first && typeof first === 'object' && first.canister_id) {
-            effectiveCanisterId = Principal$1.from(first.canister_id);
-        }
-        return { effectiveCanisterId };
-    }
-    return Actor.createActor(managementCanisterIdl, Object.assign(Object.assign(Object.assign({}, config), { canisterId: Principal$1.fromHex('') }), {
-        callTransform: transform,
-        queryTransform: transform,
-    }));
-}
-
-/**
- * An error that happens in the Agent. This is the root of all errors and should be used
- * everywhere in the Agent code (this package).
- *
- * @todo https://github.com/dfinity/agent-js/issues/420
- */
-class AgentError extends Error {
-}
-
 /*
  * base64-arraybuffer
  * https://github.com/niklasvh/base64-arraybuffer
@@ -12661,9 +11340,6 @@ var base64Arraybuffer = createCommonjsModule(function (module, exports) {
 })();
 });
 
-/* tslint:disable */
-/* eslint-disable */
-let wasm;
 // This WASM is generated from the BLS Rust code of the Agent RS (see
 // http://github.com/dfinity/agent-rs/)
 // Once the WASM is compiled, simply base64 encode it and include it in this string.
@@ -13465,397 +12141,10 @@ const wasmBytesBase64 = `
     kLWJ5AwVydXN0Yx0xLjQ5LjAgKGUxODg0YThlMyAyMDIwLTEyLTI5KQZ3YWxydXMGMC4xOC4wDHdhc20tYmluZGdlbhIw
     LjIuNzAgKGI2MzU1YzI3MCk=
 `.replace(/[^0-9a-zA-Z/+]/g, '');
-const wasmBytes = base64Arraybuffer.decode(wasmBytesBase64);
-/**
- * @returns {number}
- */
-function bls_init() {
-    let ret = wasm.bls_init();
-    return ret;
-}
-let cachegetUint8Memory0 = null;
-function getUint8Memory0() {
-    if (cachegetUint8Memory0 === null || cachegetUint8Memory0.buffer !== wasm.memory.buffer) {
-        cachegetUint8Memory0 = new Uint8Array(wasm.memory.buffer);
-    }
-    return cachegetUint8Memory0;
-}
-function passArray8ToWasm0(arg, malloc) {
-    const ptr = malloc(arg.length * 1);
-    getUint8Memory0().set(arg, ptr / 1);
-    return [ptr, arg.length];
-}
-/**
- * @param {Uint8Array} sig
- * @param {Uint8Array} m
- * @param {Uint8Array} w
- * @returns {number}
- */
-function bls_verify(sig, m, w) {
-    const [ptr0, len0] = passArray8ToWasm0(sig, wasm.__wbindgen_malloc);
-    const [ptr1, len1] = passArray8ToWasm0(m, wasm.__wbindgen_malloc);
-    const [ptr2, len2] = passArray8ToWasm0(w, wasm.__wbindgen_malloc);
-    const ret = wasm.bls_verify(ptr0, len0, ptr1, len1, ptr2, len2);
-    return ret;
-}
-async function load(module, imports) {
-    if (typeof Response === 'function' && module instanceof Response) {
-        const bytes = await module.arrayBuffer();
-        return await WebAssembly.instantiate(bytes, imports);
-    }
-    else {
-        const instance = await WebAssembly.instantiate(module, imports);
-        if (instance instanceof WebAssembly.Instance) {
-            return { instance, module };
-        }
-        else {
-            return instance;
-        }
-    }
-}
-async function init() {
-    const imports = {};
-    const { instance, module } = await load(wasmBytes, imports);
-    wasm = instance.exports;
-    init.__wbindgen_wasm_module = module;
-    return wasm;
-}
+base64Arraybuffer.decode(wasmBytesBase64);
 
-let verify;
-/**
- *
- * @param pk primary key: Uint8Array
- * @param sig signature: Uint8Array
- * @param msg message: Uint8Array
- * @returns Promise resolving a boolean
- */
-async function blsVerify(pk, sig, msg) {
-    if (!verify) {
-        await init();
-        if (bls_init() !== 0) {
-            throw new Error('Cannot initialize BLS');
-        }
-        verify = (pk1, sig1, msg1) => {
-            // Reorder things from what the WASM expects (sig, m, w).
-            return bls_verify(sig1, msg1, pk1) === 0;
-        };
-    }
-    return verify(pk, sig, msg);
-}
+fromHex('308182301d060d2b0601040182dc7c0503010201060c2b0601040182dc7c05030201036100');
 
-/**
- * A certificate needs to be verified (using {@link Certificate.prototype.verify})
- * before it can be used.
- */
-class UnverifiedCertificateError extends AgentError {
-    constructor() {
-        super(`Cannot lookup unverified certificate. Call 'verify()' first.`);
-    }
-}
-function isBufferEqual(a, b) {
-    if (a.byteLength !== b.byteLength) {
-        return false;
-    }
-    const a8 = new Uint8Array(a);
-    const b8 = new Uint8Array(b);
-    for (let i = 0; i < a8.length; i++) {
-        if (a8[i] !== b8[i]) {
-            return false;
-        }
-    }
-    return true;
-}
-class Certificate {
-    constructor(response, _agent = getDefaultAgent()) {
-        this._agent = _agent;
-        this.verified = false;
-        this._rootKey = null;
-        this.cert = decode(new Uint8Array(response.certificate));
-    }
-    lookup(path) {
-        this.checkState();
-        return lookup_path(path, this.cert.tree);
-    }
-    async verify() {
-        const rootHash = await reconstruct(this.cert.tree);
-        const derKey = await this._checkDelegation(this.cert.delegation);
-        const sig = this.cert.signature;
-        const key = extractDER(derKey);
-        const msg = concat(domain_sep('ic-state-root'), rootHash);
-        const res = await blsVerify(new Uint8Array(key), new Uint8Array(sig), new Uint8Array(msg));
-        this.verified = res;
-        return res;
-    }
-    checkState() {
-        if (!this.verified) {
-            throw new UnverifiedCertificateError();
-        }
-    }
-    async _checkDelegation(d) {
-        if (!d) {
-            if (!this._rootKey) {
-                if (this._agent.rootKey) {
-                    this._rootKey = this._agent.rootKey;
-                    return this._rootKey;
-                }
-                throw new Error(`Agent does not have a rootKey. Do you need to call 'fetchRootKey'?`);
-            }
-            return this._rootKey;
-        }
-        const cert = new Certificate(d, this._agent);
-        if (!(await cert.verify())) {
-            throw new Error('fail to verify delegation certificate');
-        }
-        const lookup = cert.lookup(['subnet', d.subnet_id, 'public_key']);
-        if (!lookup) {
-            throw new Error(`Could not find subnet key for subnet 0x${toHex(d.subnet_id)}`);
-        }
-        return lookup;
-    }
-}
-const DER_PREFIX = fromHex('308182301d060d2b0601040182dc7c0503010201060c2b0601040182dc7c05030201036100');
-const KEY_LENGTH = 96;
-function extractDER(buf) {
-    const expectedLength = DER_PREFIX.byteLength + KEY_LENGTH;
-    if (buf.byteLength !== expectedLength) {
-        throw new TypeError(`BLS DER-encoded public key must be ${expectedLength} bytes long`);
-    }
-    const prefix = buf.slice(0, DER_PREFIX.byteLength);
-    if (!isBufferEqual(prefix, DER_PREFIX)) {
-        throw new TypeError(`BLS DER-encoded public key is invalid. Expect the following prefix: ${DER_PREFIX}, but get ${prefix}`);
-    }
-    return buf.slice(DER_PREFIX.byteLength);
-}
-/**
- * @param t
- */
-async function reconstruct(t) {
-    switch (t[0]) {
-        case 0 /* Empty */:
-            return hash(domain_sep('ic-hashtree-empty'));
-        case 4 /* Pruned */:
-            return t[1];
-        case 3 /* Leaf */:
-            return hash(concat(domain_sep('ic-hashtree-leaf'), t[1]));
-        case 2 /* Labeled */:
-            return hash(concat(domain_sep('ic-hashtree-labeled'), t[1], await reconstruct(t[2])));
-        case 1 /* Fork */:
-            return hash(concat(domain_sep('ic-hashtree-fork'), await reconstruct(t[1]), await reconstruct(t[2])));
-        default:
-            throw new Error('unreachable');
-    }
-}
-function domain_sep(s) {
-    const len = new Uint8Array([s.length]);
-    const str = new TextEncoder().encode(s);
-    return concat(len, str);
-}
-/**
- * @param path
- * @param tree
- */
-function lookup_path(path, tree) {
-    if (path.length === 0) {
-        switch (tree[0]) {
-            case 3 /* Leaf */: {
-                return new Uint8Array(tree[1]).buffer;
-            }
-            default: {
-                return undefined;
-            }
-        }
-    }
-    const label = typeof path[0] === 'string' ? new TextEncoder().encode(path[0]) : path[0];
-    const t = find_label(label, flatten_forks(tree));
-    if (t) {
-        return lookup_path(path.slice(1), t);
-    }
-}
-function flatten_forks(t) {
-    switch (t[0]) {
-        case 0 /* Empty */:
-            return [];
-        case 1 /* Fork */:
-            return flatten_forks(t[1]).concat(flatten_forks(t[2]));
-        default:
-            return [t];
-    }
-}
-function find_label(l, trees) {
-    if (trees.length === 0) {
-        return undefined;
-    }
-    for (const t of trees) {
-        if (t[0] === 2 /* Labeled */) {
-            const p = t[1];
-            if (isBufferEqual(l, p)) {
-                return t[2];
-            }
-        }
-    }
-}
-
-const FIVE_MINUTES_IN_MSEC = 5 * 60 * 1000;
-/**
- * A best practices polling strategy: wait 2 seconds before the first poll, then 1 second
- * with an exponential backoff factor of 1.2. Timeout after 5 minutes.
- */
-function defaultStrategy() {
-    return chain(conditionalDelay(once(), 1000), backoff(1000, 1.2), timeout(FIVE_MINUTES_IN_MSEC));
-}
-/**
- * Predicate that returns true once.
- */
-function once() {
-    let first = true;
-    return async () => {
-        if (first) {
-            first = false;
-            return true;
-        }
-        return false;
-    };
-}
-/**
- * Delay the polling once.
- * @param condition A predicate that indicates when to delay.
- * @param timeInMsec The amount of time to delay.
- */
-function conditionalDelay(condition, timeInMsec) {
-    return async (canisterId, requestId, status) => {
-        if (await condition(canisterId, requestId, status)) {
-            return new Promise(resolve => setTimeout(resolve, timeInMsec));
-        }
-    };
-}
-/**
- * Reject a call after a certain amount of time.
- * @param timeInMsec Time in milliseconds before the polling should be rejected.
- */
-function timeout(timeInMsec) {
-    const end = Date.now() + timeInMsec;
-    return async (canisterId, requestId, status) => {
-        if (Date.now() > end) {
-            throw new Error(`Request timed out after ${timeInMsec} msec:\n` +
-                `  Request ID: ${toHex(requestId)}\n` +
-                `  Request status: ${status}\n`);
-        }
-    };
-}
-/**
- * A strategy that throttle, but using an exponential backoff strategy.
- * @param startingThrottleInMsec The throttle in milliseconds to start with.
- * @param backoffFactor The factor to multiple the throttle time between every poll. For
- *   example if using 2, the throttle will double between every run.
- */
-function backoff(startingThrottleInMsec, backoffFactor) {
-    let currentThrottling = startingThrottleInMsec;
-    return () => new Promise(resolve => setTimeout(() => {
-        currentThrottling *= backoffFactor;
-        resolve();
-    }, currentThrottling));
-}
-/**
- * Chain multiple polling strategy. This _chains_ the strategies, so if you pass in,
- * say, two throttling strategy of 1 second, it will result in a throttle of 2 seconds.
- * @param strategies A strategy list to chain.
- */
-function chain(...strategies) {
-    return async (canisterId, requestId, status) => {
-        for (const a of strategies) {
-            await a(canisterId, requestId, status);
-        }
-    };
-}
-
-/**
- * Polls the IC to check the status of the given request then
- * returns the response bytes once the request has been processed.
- * @param agent The agent to use to poll read_state.
- * @param canisterId The effective canister ID.
- * @param requestId The Request ID to poll status for.
- * @param strategy A polling strategy.
- */
-async function pollForResponse(agent, canisterId, requestId, strategy) {
-    const path = [new TextEncoder().encode('request_status'), requestId];
-    const state = await agent.readState(canisterId, { paths: [path] });
-    const cert = new Certificate(state, agent);
-    const verified = await cert.verify();
-    if (!verified) {
-        throw new Error('Fail to verify certificate');
-    }
-    const maybeBuf = cert.lookup([...path, new TextEncoder().encode('status')]);
-    let status;
-    if (typeof maybeBuf === 'undefined') {
-        // Missing requestId means we need to wait
-        status = RequestStatusResponseStatus.Unknown;
-    }
-    else {
-        status = new TextDecoder().decode(maybeBuf);
-    }
-    switch (status) {
-        case RequestStatusResponseStatus.Replied: {
-            return cert.lookup([...path, 'reply']);
-        }
-        case RequestStatusResponseStatus.Received:
-        case RequestStatusResponseStatus.Unknown:
-        case RequestStatusResponseStatus.Processing:
-            // Execute the polling strategy, then retry.
-            await strategy(canisterId, requestId, status);
-            return pollForResponse(agent, canisterId, requestId, strategy);
-        case RequestStatusResponseStatus.Rejected: {
-            const rejectCode = new Uint8Array(cert.lookup([...path, 'reject_code']))[0];
-            const rejectMessage = new TextDecoder().decode(cert.lookup([...path, 'reject_message']));
-            throw new Error(`Call was rejected:\n` +
-                `  Request ID: ${toHex(requestId)}\n` +
-                `  Reject code: ${rejectCode}\n` +
-                `  Reject text: ${rejectMessage}\n`);
-        }
-        case RequestStatusResponseStatus.Done:
-            // This is _technically_ not an error, but we still didn't see the `Replied` status so
-            // we don't know the result and cannot decode it.
-            throw new Error(`Call was marked as done but we never saw the reply:\n` +
-                `  Request ID: ${toHex(requestId)}\n`);
-    }
-    throw new Error('unreachable');
-}
-
-class ActorCallError extends AgentError {
-    constructor(canisterId, methodName, type, props) {
-        super([
-            `Call failed:`,
-            `  Canister: ${canisterId.toText()}`,
-            `  Method: ${methodName} (${type})`,
-            ...Object.getOwnPropertyNames(props).map(n => `  "${n}": ${JSON.stringify(props[n])}`),
-        ].join('\n'));
-        this.canisterId = canisterId;
-        this.methodName = methodName;
-        this.type = type;
-        this.props = props;
-    }
-}
-class QueryCallRejectedError extends ActorCallError {
-    constructor(canisterId, methodName, result) {
-        var _a;
-        super(canisterId, methodName, 'query', {
-            Status: result.status,
-            Code: (_a = ReplicaRejectCode[result.reject_code]) !== null && _a !== void 0 ? _a : `Unknown Code "${result.reject_code}"`,
-            Message: result.reject_message,
-        });
-        this.result = result;
-    }
-}
-class UpdateCallRejectedError extends ActorCallError {
-    constructor(canisterId, methodName, requestId, response) {
-        super(canisterId, methodName, 'update', {
-            'Request ID': toHex(requestId),
-            'HTTP status code': response.status.toString(),
-            'HTTP status text': response.statusText,
-        });
-        this.requestId = requestId;
-        this.response = response;
-    }
-}
 /**
  * The mode used when installing a canister.
  */
@@ -13865,196 +12154,46 @@ var CanisterInstallMode;
     CanisterInstallMode["Reinstall"] = "reinstall";
     CanisterInstallMode["Upgrade"] = "upgrade";
 })(CanisterInstallMode || (CanisterInstallMode = {}));
-const metadataSymbol = Symbol.for('ic-agent-metadata');
-/**
- * An actor base class. An actor is an object containing only functions that will
- * return a promise. These functions are derived from the IDL definition.
- */
-class Actor {
-    constructor(metadata) {
-        this[metadataSymbol] = Object.freeze(metadata);
-    }
-    /**
-     * Get the Agent class this Actor would call, or undefined if the Actor would use
-     * the default agent (global.ic.agent).
-     * @param actor The actor to get the agent of.
-     */
-    static agentOf(actor) {
-        return actor[metadataSymbol].config.agent;
-    }
-    /**
-     * Get the interface of an actor, in the form of an instance of a Service.
-     * @param actor The actor to get the interface of.
-     */
-    static interfaceOf(actor) {
-        return actor[metadataSymbol].service;
-    }
-    static canisterIdOf(actor) {
-        return Principal$1.from(actor[metadataSymbol].config.canisterId);
-    }
-    static async install(fields, config) {
-        const mode = fields.mode === undefined ? CanisterInstallMode.Install : fields.mode;
-        // Need to transform the arg into a number array.
-        const arg = fields.arg ? [...new Uint8Array(fields.arg)] : [];
-        // Same for module.
-        const wasmModule = [...new Uint8Array(fields.module)];
-        const canisterId = typeof config.canisterId === 'string'
-            ? Principal$1.fromText(config.canisterId)
-            : config.canisterId;
-        await getManagementCanister(config).install_code({
-            mode: { [mode]: null },
-            arg,
-            wasm_module: wasmModule,
-            canister_id: canisterId,
-        });
-    }
-    static async createCanister(config) {
-        const { canister_id: canisterId } = await getManagementCanister(config || {}).provisional_create_canister_with_cycles({ amount: [], settings: [] });
-        return canisterId;
-    }
-    static async createAndInstallCanister(interfaceFactory, fields, config) {
-        const canisterId = await this.createCanister(config);
-        await this.install(Object.assign({}, fields), Object.assign(Object.assign({}, config), { canisterId }));
-        return this.createActor(interfaceFactory, Object.assign(Object.assign({}, config), { canisterId }));
-    }
-    static createActorClass(interfaceFactory) {
-        const service = interfaceFactory({ IDL });
-        class CanisterActor extends Actor {
-            constructor(config) {
-                const canisterId = typeof config.canisterId === 'string'
-                    ? Principal$1.fromText(config.canisterId)
-                    : config.canisterId;
-                super({
-                    config: Object.assign(Object.assign(Object.assign({}, DEFAULT_ACTOR_CONFIG), config), { canisterId }),
-                    service,
-                });
-                for (const [methodName, func] of service._fields) {
-                    this[methodName] = _createActorMethod(this, methodName, func);
-                }
-            }
-        }
-        return CanisterActor;
-    }
-    static createActor(interfaceFactory, configuration) {
-        return new (this.createActorClass(interfaceFactory))(configuration);
-    }
-}
-// IDL functions can have multiple return values, so decoding always
-// produces an array. Ensure that functions with single or zero return
-// values behave as expected.
-function decodeReturnValue(types, msg) {
-    const returnValues = decode$1(types, buffer.Buffer.from(msg));
-    switch (returnValues.length) {
-        case 0:
-            return undefined;
-        case 1:
-            return returnValues[0];
-        default:
-            return returnValues;
-    }
-}
-const DEFAULT_ACTOR_CONFIG = {
-    pollingStrategyFactory: defaultStrategy,
-};
-function _createActorMethod(actor, methodName, func) {
-    let caller;
-    if (func.annotations.includes('query')) {
-        caller = async (options, ...args) => {
-            var _a, _b;
-            // First, if there's a config transformation, call it.
-            options = Object.assign(Object.assign({}, options), (_b = (_a = actor[metadataSymbol].config).queryTransform) === null || _b === void 0 ? void 0 : _b.call(_a, methodName, args, Object.assign(Object.assign({}, actor[metadataSymbol].config), options)));
-            const agent = options.agent || actor[metadataSymbol].config.agent || getDefaultAgent();
-            const cid = Principal$1.from(options.canisterId || actor[metadataSymbol].config.canisterId);
-            const arg = encode$1(func.argTypes, args);
-            const result = await agent.query(cid, { methodName, arg });
-            switch (result.status) {
-                case "rejected" /* Rejected */:
-                    throw new QueryCallRejectedError(cid, methodName, result);
-                case "replied" /* Replied */:
-                    return decodeReturnValue(func.retTypes, result.reply.arg);
-            }
-        };
-    }
-    else {
-        caller = async (options, ...args) => {
-            var _a, _b;
-            // First, if there's a config transformation, call it.
-            options = Object.assign(Object.assign({}, options), (_b = (_a = actor[metadataSymbol].config).callTransform) === null || _b === void 0 ? void 0 : _b.call(_a, methodName, args, Object.assign(Object.assign({}, actor[metadataSymbol].config), options)));
-            const agent = options.agent || actor[metadataSymbol].config.agent || getDefaultAgent();
-            const { canisterId, effectiveCanisterId, pollingStrategyFactory } = Object.assign(Object.assign(Object.assign({}, DEFAULT_ACTOR_CONFIG), actor[metadataSymbol].config), options);
-            const cid = Principal$1.from(canisterId);
-            const ecid = effectiveCanisterId !== undefined ? Principal$1.from(effectiveCanisterId) : cid;
-            const arg = encode$1(func.argTypes, args);
-            const { requestId, response } = await agent.call(cid, {
-                methodName,
-                arg,
-                effectiveCanisterId: ecid,
-            });
-            if (!response.ok) {
-                throw new UpdateCallRejectedError(cid, methodName, requestId, response);
-            }
-            const pollStrategy = pollingStrategyFactory();
-            const responseBytes = await pollForResponse(agent, ecid, requestId, pollStrategy);
-            if (responseBytes !== undefined) {
-                return decodeReturnValue(func.retTypes, responseBytes);
-            }
-            else if (func.retTypes.length === 0) {
-                return undefined;
-            }
-            else {
-                throw new Error(`Call was returned undefined, but type [${func.retTypes.join(',')}].`);
-            }
-        };
-    }
-    const handler = (...args) => caller({}, ...args);
-    handler.withOptions =
-        (options) => (...args) => caller(options, ...args);
-    return handler;
-}
 
 //TODO : Add your mainnet id whenever you have deployed on the IC
 const daoCanisterId =
   "xdai7-gaaaa-aaaak-aeacq-cai" 
     ; //IC
 
-// See https://docs.plugwallet.ooo/ for more informations
+    
 async function plugConnection() {
   const result = await window.ic.plug.requestConnect({
     whitelist: [daoCanisterId],
   });
   if (!result) {
-    throw new Error("User denied the connection");
+    throw new Error("User denied the connection")
   }
   const p = await window.ic.plug.agent.getPrincipal();
-  p.id = await window.ic.plug.principalId;
 
   const agent = new HttpAgent({
-    host: "https://ic0.app",
-/*      "development" === "development"
-        ? "http://localhost:5000"
-        : "https://ic0.app",*/
+    host: "http://localhost:8000" ,
   });
 
   {
     agent.fetchRootKey();
   }
 
-  const actor = Actor.createActor(idlFactory, {
-    agent,
-    canisterId: daoCanisterId,
+  const actor = await window.ic.plug.createActor ({
+    canisterId : daoCanisterId,
+    interfaceFactory : idlFactory,
   });
 
   console.log(actor);
 
   principal.update(() => p);
-  daoActor.update(() => actor);
+  daoActor.update((oldValue) => {return actor});
 }
 
 /* src/components/head/Header.svelte generated by Svelte v3.49.0 */
 const file$6 = "src/components/head/Header.svelte";
 
 // (43:12) {:else}
-function create_else_block$2(ctx) {
+function create_else_block$3(ctx) {
 	let button;
 	let mounted;
 	let dispose;
@@ -14084,7 +12223,7 @@ function create_else_block$2(ctx) {
 
 	dispatch_dev("SvelteRegisterBlock", {
 		block,
-		id: create_else_block$2.name,
+		id: create_else_block$3.name,
 		type: "else",
 		source: "(43:12) {:else}",
 		ctx
@@ -14176,7 +12315,7 @@ function create_fragment$6(ctx) {
 
 	function select_block_type(ctx, dirty) {
 		if (/*$principal*/ ctx[0]) return create_if_block$4;
-		return create_else_block$2;
+		return create_else_block$3;
 	}
 
 	let current_block_type = select_block_type(ctx);
@@ -14306,7 +12445,7 @@ function instance$6($$self, $$props, $$invalidate) {
 class Header extends SvelteComponentDev {
 	constructor(options) {
 		super(options);
-		init$1(this, options, instance$6, create_fragment$6, safe_not_equal, {});
+		init(this, options, instance$6, create_fragment$6, safe_not_equal, {});
 
 		dispatch_dev("SvelteRegisterComponent", {
 			component: this,
@@ -14381,7 +12520,7 @@ function instance$5($$self, $$props) {
 class Home extends SvelteComponentDev {
 	constructor(options) {
 		super(options);
-		init$1(this, options, instance$5, create_fragment$5, safe_not_equal, {});
+		init(this, options, instance$5, create_fragment$5, safe_not_equal, {});
 
 		dispatch_dev("SvelteRegisterComponent", {
 			component: this,
@@ -14450,7 +12589,7 @@ function instance$4($$self, $$props) {
 class Vote extends SvelteComponentDev {
 	constructor(options) {
 		super(options);
-		init$1(this, options, instance$4, create_fragment$4, safe_not_equal, {});
+		init(this, options, instance$4, create_fragment$4, safe_not_equal, {});
 
 		dispatch_dev("SvelteRegisterComponent", {
 			component: this,
@@ -14466,7 +12605,191 @@ class Vote extends SvelteComponentDev {
 const { Error: Error_1$1, console: console_1$2 } = globals;
 const file$3 = "src/components/Proposal.svelte";
 
-// (89:4) {#if proposal.winner != false && proposal.winner != true}
+// (126:10) {:catch error}
+function create_catch_block_1(ctx) {
+	let span;
+	let t_value = /*error*/ ctx[10].message + "";
+	let t;
+
+	const block = {
+		c: function create() {
+			span = element("span");
+			t = text(t_value);
+			attr_dev(span, "class", "px-2 text-sm text-white");
+			add_location(span, file$3, 126, 12, 3464);
+		},
+		m: function mount(target, anchor) {
+			insert_dev(target, span, anchor);
+			append_dev(span, t);
+		},
+		p: noop,
+		d: function destroy(detaching) {
+			if (detaching) detach_dev(span);
+		}
+	};
+
+	dispatch_dev("SvelteRegisterBlock", {
+		block,
+		id: create_catch_block_1.name,
+		type: "catch",
+		source: "(126:10) {:catch error}",
+		ctx
+	});
+
+	return block;
+}
+
+// (117:10) {:then v}
+function create_then_block_1(ctx) {
+	let if_block_anchor;
+
+	function select_block_type(ctx, dirty) {
+		if (/*v*/ ctx[11]) return create_if_block_2$1;
+		return create_else_block_1$1;
+	}
+
+	let current_block_type = select_block_type(ctx);
+	let if_block = current_block_type(ctx);
+
+	const block = {
+		c: function create() {
+			if_block.c();
+			if_block_anchor = empty();
+		},
+		m: function mount(target, anchor) {
+			if_block.m(target, anchor);
+			insert_dev(target, if_block_anchor, anchor);
+		},
+		p: function update(ctx, dirty) {
+			if_block.p(ctx, dirty);
+		},
+		d: function destroy(detaching) {
+			if_block.d(detaching);
+			if (detaching) detach_dev(if_block_anchor);
+		}
+	};
+
+	dispatch_dev("SvelteRegisterBlock", {
+		block,
+		id: create_then_block_1.name,
+		type: "then",
+		source: "(117:10) {:then v}",
+		ctx
+	});
+
+	return block;
+}
+
+// (123:12) {:else}
+function create_else_block_1$1(ctx) {
+	let span;
+
+	const block = {
+		c: function create() {
+			span = element("span");
+			span.textContent = "hey";
+			attr_dev(span, "class", "px-2 text-sm text-white");
+			add_location(span, file$3, 123, 12, 3357);
+		},
+		m: function mount(target, anchor) {
+			insert_dev(target, span, anchor);
+		},
+		p: noop,
+		d: function destroy(detaching) {
+			if (detaching) detach_dev(span);
+		}
+	};
+
+	dispatch_dev("SvelteRegisterBlock", {
+		block,
+		id: create_else_block_1$1.name,
+		type: "else",
+		source: "(123:12) {:else}",
+		ctx
+	});
+
+	return block;
+}
+
+// (118:12) {#if v}
+function create_if_block_2$1(ctx) {
+	let span;
+
+	let t_value = (!/*canVote*/ ctx[3]
+	? "You already voted: " + /*v*/ ctx[11].vote + " with " + /*v*/ ctx[11].votingPowah + " voting powah"
+	: "you can vote") + "";
+
+	let t;
+	let span_class_value;
+
+	const block = {
+		c: function create() {
+			span = element("span");
+			t = text(t_value);
+			attr_dev(span, "class", span_class_value = "" + ((/*canVote*/ ctx[3] ? "bg-green-400" : "bg-red-400") + " px-2 text-sm text-white"));
+			add_location(span, file$3, 118, 14, 3090);
+		},
+		m: function mount(target, anchor) {
+			insert_dev(target, span, anchor);
+			append_dev(span, t);
+		},
+		p: function update(ctx, dirty) {
+			if (dirty & /*canVote*/ 8 && t_value !== (t_value = (!/*canVote*/ ctx[3]
+			? "You already voted: " + /*v*/ ctx[11].vote + " with " + /*v*/ ctx[11].votingPowah + " voting powah"
+			: "you can vote") + "")) set_data_dev(t, t_value);
+
+			if (dirty & /*canVote*/ 8 && span_class_value !== (span_class_value = "" + ((/*canVote*/ ctx[3] ? "bg-green-400" : "bg-red-400") + " px-2 text-sm text-white"))) {
+				attr_dev(span, "class", span_class_value);
+			}
+		},
+		d: function destroy(detaching) {
+			if (detaching) detach_dev(span);
+		}
+	};
+
+	dispatch_dev("SvelteRegisterBlock", {
+		block,
+		id: create_if_block_2$1.name,
+		type: "if",
+		source: "(118:12) {#if v}",
+		ctx
+	});
+
+	return block;
+}
+
+// (115:30)              <span  class=" px-2 text-sm text-white" >...waiting</span>           {:then v}
+function create_pending_block_1(ctx) {
+	let span;
+
+	const block = {
+		c: function create() {
+			span = element("span");
+			span.textContent = "...waiting";
+			attr_dev(span, "class", "px-2 text-sm text-white");
+			add_location(span, file$3, 115, 12, 2977);
+		},
+		m: function mount(target, anchor) {
+			insert_dev(target, span, anchor);
+		},
+		p: noop,
+		d: function destroy(detaching) {
+			if (detaching) detach_dev(span);
+		}
+	};
+
+	dispatch_dev("SvelteRegisterBlock", {
+		block,
+		id: create_pending_block_1.name,
+		type: "pending",
+		source: "(115:30)              <span  class=\\\" px-2 text-sm text-white\\\" >...waiting</span>           {:then v}",
+		ctx
+	});
+
+	return block;
+}
+
+// (141:4) {#if proposal && proposal.winner && Array.isArray(proposal.winner) && proposal.winner.length == 0 && canVote == true}
 function create_if_block$3(ctx) {
 	let div3;
 	let div2;
@@ -14475,8 +12798,24 @@ function create_if_block$3(ctx) {
 	let t1;
 	let div1;
 	let button1;
+	let t3;
+	let promise_1;
 	let mounted;
 	let dispose;
+
+	let info = {
+		ctx,
+		current: null,
+		token: null,
+		hasCatch: true,
+		pending: create_pending_block$2,
+		then: create_then_block$2,
+		catch: create_catch_block$2,
+		value: 9,
+		error: 10
+	};
+
+	handle_promise(promise_1 = /*promise*/ ctx[4], info);
 
 	const block = {
 		c: function create() {
@@ -14489,18 +12828,20 @@ function create_if_block$3(ctx) {
 			div1 = element("div");
 			button1 = element("button");
 			button1.textContent = "Reject";
+			t3 = space();
+			info.block.c();
 			attr_dev(button0, "class", "w-full bg-green-200 hover:bg-green-400 text-black hover:text-black px-4 py-2 hover:shadow-hard text-sm hover:uppercase hover:font-black");
-			add_location(button0, file$3, 92, 10, 2487);
+			add_location(button0, file$3, 144, 10, 4044);
 			attr_dev(div0, "class", "w-1/2");
-			add_location(div0, file$3, 91, 8, 2457);
+			add_location(div0, file$3, 143, 8, 4014);
 			attr_dev(button1, "class", "w-full bg-red-200 hover:bg-red-500 text-black hover:text-black px-4 py-2 hover:shadow-hard text-sm hover:uppercase hover:font-black");
-			add_location(button1, file$3, 100, 10, 2833);
+			add_location(button1, file$3, 152, 10, 4395);
 			attr_dev(div1, "class", "w-1/2 flex gap-x-2");
-			add_location(div1, file$3, 99, 8, 2790);
+			add_location(div1, file$3, 151, 8, 4352);
 			attr_dev(div2, "class", "w-full flex gap-x-2");
-			add_location(div2, file$3, 90, 6, 2415);
+			add_location(div2, file$3, 142, 6, 3972);
 			attr_dev(div3, "class", "flex flex-wrap w-full gap-y-2");
-			add_location(div3, file$3, 89, 4, 2365);
+			add_location(div3, file$3, 141, 4, 3922);
 		},
 		m: function mount(target, anchor) {
 			insert_dev(target, div3, anchor);
@@ -14510,19 +12851,51 @@ function create_if_block$3(ctx) {
 			append_dev(div2, t1);
 			append_dev(div2, div1);
 			append_dev(div1, button1);
+			append_dev(div3, t3);
+			info.block.m(div3, info.anchor = null);
+			info.mount = () => div3;
+			info.anchor = null;
 
 			if (!mounted) {
 				dispose = [
-					listen_dev(button0, "click", /*click_handler*/ ctx[4], false, false, false),
-					listen_dev(button1, "click", /*click_handler_1*/ ctx[5], false, false, false)
+					listen_dev(
+						button0,
+						"click",
+						function () {
+							if (is_function(/*handleVote*/ ctx[6]({ id: /*proposal*/ ctx[0].id, vote: true }))) /*handleVote*/ ctx[6]({ id: /*proposal*/ ctx[0].id, vote: true }).apply(this, arguments);
+						},
+						false,
+						false,
+						false
+					),
+					listen_dev(
+						button1,
+						"click",
+						function () {
+							if (is_function(/*handleVote*/ ctx[6]({ id: /*proposal*/ ctx[0].id, vote: false }))) /*handleVote*/ ctx[6]({ id: /*proposal*/ ctx[0].id, vote: false }).apply(this, arguments);
+						},
+						false,
+						false,
+						false
+					)
 				];
 
 				mounted = true;
 			}
 		},
-		p: noop,
+		p: function update(new_ctx, dirty) {
+			ctx = new_ctx;
+			info.ctx = ctx;
+
+			if (dirty & /*promise*/ 16 && promise_1 !== (promise_1 = /*promise*/ ctx[4]) && handle_promise(promise_1, info)) ; else {
+				update_await_block_branch(info, ctx, dirty);
+			}
+		},
 		d: function destroy(detaching) {
 			if (detaching) detach_dev(div3);
+			info.block.d();
+			info.token = null;
+			info = null;
 			mounted = false;
 			run_all(dispose);
 		}
@@ -14532,7 +12905,213 @@ function create_if_block$3(ctx) {
 		block,
 		id: create_if_block$3.name,
 		type: "if",
-		source: "(89:4) {#if proposal.winner != false && proposal.winner != true}",
+		source: "(141:4) {#if proposal && proposal.winner && Array.isArray(proposal.winner) && proposal.winner.length == 0 && canVote == true}",
+		ctx
+	});
+
+	return block;
+}
+
+// (173:8) {:catch error}
+function create_catch_block$2(ctx) {
+	let p;
+	let t_value = /*error*/ ctx[10].message + "";
+	let t;
+
+	const block = {
+		c: function create() {
+			p = element("p");
+			t = text(t_value);
+			attr_dev(p, "class", "w-full");
+			set_style(p, "color", "red");
+			add_location(p, file$3, 173, 10, 5231);
+		},
+		m: function mount(target, anchor) {
+			insert_dev(target, p, anchor);
+			append_dev(p, t);
+		},
+		p: function update(ctx, dirty) {
+			if (dirty & /*promise*/ 16 && t_value !== (t_value = /*error*/ ctx[10].message + "")) set_data_dev(t, t_value);
+		},
+		d: function destroy(detaching) {
+			if (detaching) detach_dev(p);
+		}
+	};
+
+	dispatch_dev("SvelteRegisterBlock", {
+		block,
+		id: create_catch_block$2.name,
+		type: "catch",
+		source: "(173:8) {:catch error}",
+		ctx
+	});
+
+	return block;
+}
+
+// (163:8) {:then prop}
+function create_then_block$2(ctx) {
+	let if_block_anchor;
+
+	function select_block_type_1(ctx, dirty) {
+		if (/*prop*/ ctx[9] && /*prop*/ ctx[9] > 0) return create_if_block_1$3;
+		return create_else_block$2;
+	}
+
+	let current_block_type = select_block_type_1(ctx);
+	let if_block = current_block_type(ctx);
+
+	const block = {
+		c: function create() {
+			if_block.c();
+			if_block_anchor = empty();
+		},
+		m: function mount(target, anchor) {
+			if_block.m(target, anchor);
+			insert_dev(target, if_block_anchor, anchor);
+		},
+		p: function update(ctx, dirty) {
+			if (current_block_type === (current_block_type = select_block_type_1(ctx)) && if_block) {
+				if_block.p(ctx, dirty);
+			} else {
+				if_block.d(1);
+				if_block = current_block_type(ctx);
+
+				if (if_block) {
+					if_block.c();
+					if_block.m(if_block_anchor.parentNode, if_block_anchor);
+				}
+			}
+		},
+		d: function destroy(detaching) {
+			if_block.d(detaching);
+			if (detaching) detach_dev(if_block_anchor);
+		}
+	};
+
+	dispatch_dev("SvelteRegisterBlock", {
+		block,
+		id: create_then_block$2.name,
+		type: "then",
+		source: "(163:8) {:then prop}",
+		ctx
+	});
+
+	return block;
+}
+
+// (168:12) {:else}
+function create_else_block$2(ctx) {
+	let p;
+	let t0;
+	let t1_value = /*prop*/ ctx[9] + "";
+	let t1;
+	let t2;
+
+	const block = {
+		c: function create() {
+			p = element("p");
+			t0 = text("Vote Not submited, maybe you already voted here, or proposal has been closed in the meanwhile, or you own too few MB! ");
+			t1 = text(t1_value);
+			t2 = text("!");
+			attr_dev(p, "class", "w-full");
+			set_style(p, "color", "white");
+			add_location(p, file$3, 168, 12, 4985);
+		},
+		m: function mount(target, anchor) {
+			insert_dev(target, p, anchor);
+			append_dev(p, t0);
+			append_dev(p, t1);
+			append_dev(p, t2);
+		},
+		p: function update(ctx, dirty) {
+			if (dirty & /*promise*/ 16 && t1_value !== (t1_value = /*prop*/ ctx[9] + "")) set_data_dev(t1, t1_value);
+		},
+		d: function destroy(detaching) {
+			if (detaching) detach_dev(p);
+		}
+	};
+
+	dispatch_dev("SvelteRegisterBlock", {
+		block,
+		id: create_else_block$2.name,
+		type: "else",
+		source: "(168:12) {:else}",
+		ctx
+	});
+
+	return block;
+}
+
+// (164:10) {#if prop && prop > 0}
+function create_if_block_1$3(ctx) {
+	let p;
+	let t0;
+	let t1_value = /*prop*/ ctx[9] + "";
+	let t1;
+	let t2;
+
+	const block = {
+		c: function create() {
+			p = element("p");
+			t0 = text("Vote submitted! ");
+			t1 = text(t1_value);
+			t2 = text("!");
+			attr_dev(p, "class", "w-full");
+			set_style(p, "color", "white");
+			add_location(p, file$3, 164, 12, 4858);
+		},
+		m: function mount(target, anchor) {
+			insert_dev(target, p, anchor);
+			append_dev(p, t0);
+			append_dev(p, t1);
+			append_dev(p, t2);
+		},
+		p: function update(ctx, dirty) {
+			if (dirty & /*promise*/ 16 && t1_value !== (t1_value = /*prop*/ ctx[9] + "")) set_data_dev(t1, t1_value);
+		},
+		d: function destroy(detaching) {
+			if (detaching) detach_dev(p);
+		}
+	};
+
+	dispatch_dev("SvelteRegisterBlock", {
+		block,
+		id: create_if_block_1$3.name,
+		type: "if",
+		source: "(164:10) {#if prop && prop > 0}",
+		ctx
+	});
+
+	return block;
+}
+
+// (161:22)            <p class="w-full" style="color: white">...waiting</p>         {:then prop}
+function create_pending_block$2(ctx) {
+	let p;
+
+	const block = {
+		c: function create() {
+			p = element("p");
+			p.textContent = "...waiting";
+			attr_dev(p, "class", "w-full");
+			set_style(p, "color", "white");
+			add_location(p, file$3, 161, 10, 4738);
+		},
+		m: function mount(target, anchor) {
+			insert_dev(target, p, anchor);
+		},
+		p: noop,
+		d: function destroy(detaching) {
+			if (detaching) detach_dev(p);
+		}
+	};
+
+	dispatch_dev("SvelteRegisterBlock", {
+		block,
+		id: create_pending_block$2.name,
+		type: "pending",
+		source: "(161:22)            <p class=\\\"w-full\\\" style=\\\"color: white\\\">...waiting</p>         {:then prop}",
 		ctx
 	});
 
@@ -14541,8 +13120,8 @@ function create_if_block$3(ctx) {
 
 function create_fragment$3(ctx) {
 	let div8;
-	let div5;
-	let div3;
+	let div6;
+	let div4;
 	let div0;
 	let span0;
 	let t1;
@@ -14564,26 +13143,41 @@ function create_fragment$3(ctx) {
 	let t10;
 	let span5_class_value;
 	let t11;
-	let div4;
+	let div3;
 	let span6;
 	let t13;
-	let t14_value = /*proposal*/ ctx[0].title + "";
 	let t14;
+	let div5;
+	let t15_value = /*proposal*/ ctx[0].title + "";
 	let t15;
+	let t16;
 	let div7;
-	let div6;
-	let t17;
 	let p;
-	let t18_value = /*proposal*/ ctx[0].description + "";
+	let t17_value = /*proposal*/ ctx[0].description + "";
+	let t17;
 	let t18;
-	let t19;
-	let if_block = /*proposal*/ ctx[0].winner != false && /*proposal*/ ctx[0].winner != true && create_if_block$3(ctx);
+	let show_if = /*proposal*/ ctx[0] && /*proposal*/ ctx[0].winner && Array.isArray(/*proposal*/ ctx[0].winner) && /*proposal*/ ctx[0].winner.length == 0 && /*canVote*/ ctx[3] == true;
+
+	let info = {
+		ctx,
+		current: null,
+		token: null,
+		hasCatch: true,
+		pending: create_pending_block_1,
+		then: create_then_block_1,
+		catch: create_catch_block_1,
+		value: 11,
+		error: 10
+	};
+
+	handle_promise(/*promiseVote*/ ctx[5], info);
+	let if_block = show_if && create_if_block$3(ctx);
 
 	const block = {
 		c: function create() {
 			div8 = element("div");
-			div5 = element("div");
-			div3 = element("div");
+			div6 = element("div");
+			div4 = element("div");
 			div0 = element("div");
 			span0 = element("span");
 			span0.textContent = "Id:";
@@ -14600,111 +13194,117 @@ function create_fragment$3(ctx) {
 			t7 = space();
 			div2 = element("div");
 			span4 = element("span");
-			span4.textContent = "STATUS:";
+			span4.textContent = "state:";
 			t9 = space();
 			span5 = element("span");
-			t10 = text(/*status*/ ctx[1]);
+			t10 = text(/*state*/ ctx[1]);
 			t11 = space();
-			div4 = element("div");
+			div3 = element("div");
 			span6 = element("span");
-			span6.textContent = "Title:";
+			span6.textContent = "ACTION:";
 			t13 = space();
-			t14 = text(t14_value);
-			t15 = space();
+			info.block.c();
+			t14 = space();
+			div5 = element("div");
+			t15 = text(t15_value);
+			t16 = space();
 			div7 = element("div");
-			div6 = element("div");
-			div6.textContent = "Description:";
-			t17 = space();
 			p = element("p");
-			t18 = text(t18_value);
-			t19 = space();
+			t17 = text(t17_value);
+			t18 = space();
 			if (if_block) if_block.c();
 			attr_dev(span0, "class", "mr-2 align-baseline font-black uppercase");
-			add_location(span0, file$3, 51, 10, 1144);
-			attr_dev(span1, "class", "bg-black-400 px-2 text-sm text-white");
-			add_location(span1, file$3, 54, 10, 1244);
+			add_location(span0, file$3, 86, 10, 2049);
+			attr_dev(span1, "class", "bg-black px-2 text-sm text-white");
+			add_location(span1, file$3, 89, 10, 2149);
 			attr_dev(div0, "class", "flex items-center");
-			add_location(div0, file$3, 50, 8, 1102);
+			add_location(div0, file$3, 85, 8, 2007);
 			attr_dev(span2, "class", "mr-2 align-baseline font-black uppercase");
-			add_location(span2, file$3, 59, 10, 1405);
-			attr_dev(span3, "class", "bg-green-400 px-2 text-sm text-white");
-			add_location(span3, file$3, 62, 10, 1509);
+			add_location(span2, file$3, 94, 10, 2306);
+			attr_dev(span3, "class", "bg-black px-2 text-sm text-white");
+			add_location(span3, file$3, 97, 10, 2410);
 			attr_dev(div1, "class", "flex items-center");
-			add_location(div1, file$3, 58, 8, 1363);
+			add_location(div1, file$3, 93, 8, 2264);
 			attr_dev(span4, "class", "mr-2 align-baseline font-black uppercase");
-			add_location(span4, file$3, 67, 10, 1674);
-			attr_dev(span5, "class", span5_class_value = "" + (/*statusCss*/ ctx[2] + " px-2 text-sm text-white"));
-			add_location(span5, file$3, 70, 10, 1778);
+			add_location(span4, file$3, 102, 10, 2571);
+			attr_dev(span5, "class", span5_class_value = "" + (/*stateCss*/ ctx[2] + " px-2 text-sm text-white"));
+			add_location(span5, file$3, 105, 10, 2674);
 			attr_dev(div2, "class", "flex items-center");
-			add_location(div2, file$3, 66, 8, 1632);
-			attr_dev(div3, "class", "flex items-center gap-y-2 gap-x-2");
-			add_location(div3, file$3, 49, 6, 1046);
+			add_location(div2, file$3, 101, 8, 2529);
 			attr_dev(span6, "class", "mr-2 align-baseline font-black uppercase");
-			add_location(span6, file$3, 77, 8, 1972);
-			attr_dev(div4, "class", "flex items-center gap-y-2 text-3xl");
-			add_location(div4, file$3, 76, 6, 1915);
-			attr_dev(div5, "class", "w-full mb-2");
-			add_location(div5, file$3, 48, 4, 1014);
-			attr_dev(div6, "class", "w-full text-xs font-black uppercase");
-			add_location(div6, file$3, 85, 6, 2169);
+			add_location(span6, file$3, 111, 10, 2840);
+			attr_dev(div3, "class", "flex items-center");
+			add_location(div3, file$3, 110, 8, 2798);
+			attr_dev(div4, "class", "flex items-center gap-y-2 gap-x-2");
+			add_location(div4, file$3, 84, 6, 1951);
+			attr_dev(div5, "class", "flex items-center gap-y-2");
+			add_location(div5, file$3, 132, 6, 3592);
+			attr_dev(div6, "class", "w-full mb-2");
+			add_location(div6, file$3, 83, 4, 1919);
 			attr_dev(p, "class", "w-full");
-			add_location(p, file$3, 86, 6, 2243);
+			add_location(p, file$3, 138, 6, 3740);
 			attr_dev(div7, "class", "flex flex-wrap gap-y-2 mb-2");
-			add_location(div7, file$3, 84, 4, 2121);
-			attr_dev(div8, "class", "flex flex-wrap gap-y-4 text-white");
-			add_location(div8, file$3, 47, 2, 962);
+			add_location(div7, file$3, 137, 4, 3692);
+			attr_dev(div8, "class", "flex flex-wrap gap-y-4 text-white border border-black p-5 m-5");
+			add_location(div8, file$3, 82, 2, 1839);
 		},
 		l: function claim(nodes) {
 			throw new Error_1$1("options.hydrate only works if the component was compiled with the `hydratable: true` option");
 		},
 		m: function mount(target, anchor) {
 			insert_dev(target, div8, anchor);
-			append_dev(div8, div5);
-			append_dev(div5, div3);
-			append_dev(div3, div0);
+			append_dev(div8, div6);
+			append_dev(div6, div4);
+			append_dev(div4, div0);
 			append_dev(div0, span0);
 			append_dev(div0, t1);
 			append_dev(div0, span1);
 			append_dev(span1, t2);
-			append_dev(div3, t3);
-			append_dev(div3, div1);
+			append_dev(div4, t3);
+			append_dev(div4, div1);
 			append_dev(div1, span2);
 			append_dev(div1, t5);
 			append_dev(div1, span3);
 			append_dev(span3, t6);
-			append_dev(div3, t7);
-			append_dev(div3, div2);
+			append_dev(div4, t7);
+			append_dev(div4, div2);
 			append_dev(div2, span4);
 			append_dev(div2, t9);
 			append_dev(div2, span5);
 			append_dev(span5, t10);
-			append_dev(div5, t11);
-			append_dev(div5, div4);
-			append_dev(div4, span6);
-			append_dev(div4, t13);
-			append_dev(div4, t14);
-			append_dev(div8, t15);
+			append_dev(div4, t11);
+			append_dev(div4, div3);
+			append_dev(div3, span6);
+			append_dev(div3, t13);
+			info.block.m(div3, info.anchor = null);
+			info.mount = () => div3;
+			info.anchor = null;
+			append_dev(div6, t14);
+			append_dev(div6, div5);
+			append_dev(div5, t15);
+			append_dev(div8, t16);
 			append_dev(div8, div7);
-			append_dev(div7, div6);
-			append_dev(div7, t17);
 			append_dev(div7, p);
-			append_dev(p, t18);
-			append_dev(div8, t19);
+			append_dev(p, t17);
+			append_dev(div8, t18);
 			if (if_block) if_block.m(div8, null);
 		},
-		p: function update(ctx, [dirty]) {
+		p: function update(new_ctx, [dirty]) {
+			ctx = new_ctx;
 			if (dirty & /*proposal*/ 1 && t2_value !== (t2_value = /*proposal*/ ctx[0].id + "")) set_data_dev(t2, t2_value);
 			if (dirty & /*proposal*/ 1 && t6_value !== (t6_value = /*proposal*/ ctx[0].author + "")) set_data_dev(t6, t6_value);
-			if (dirty & /*status*/ 2) set_data_dev(t10, /*status*/ ctx[1]);
+			if (dirty & /*state*/ 2) set_data_dev(t10, /*state*/ ctx[1]);
 
-			if (dirty & /*statusCss*/ 4 && span5_class_value !== (span5_class_value = "" + (/*statusCss*/ ctx[2] + " px-2 text-sm text-white"))) {
+			if (dirty & /*stateCss*/ 4 && span5_class_value !== (span5_class_value = "" + (/*stateCss*/ ctx[2] + " px-2 text-sm text-white"))) {
 				attr_dev(span5, "class", span5_class_value);
 			}
 
-			if (dirty & /*proposal*/ 1 && t14_value !== (t14_value = /*proposal*/ ctx[0].title + "")) set_data_dev(t14, t14_value);
-			if (dirty & /*proposal*/ 1 && t18_value !== (t18_value = /*proposal*/ ctx[0].description + "")) set_data_dev(t18, t18_value);
+			update_await_block_branch(info, ctx, dirty);
+			if (dirty & /*proposal*/ 1 && t15_value !== (t15_value = /*proposal*/ ctx[0].title + "")) set_data_dev(t15, t15_value);
+			if (dirty & /*proposal*/ 1 && t17_value !== (t17_value = /*proposal*/ ctx[0].description + "")) set_data_dev(t17, t17_value);
+			if (dirty & /*proposal, canVote*/ 9) show_if = /*proposal*/ ctx[0] && /*proposal*/ ctx[0].winner && Array.isArray(/*proposal*/ ctx[0].winner) && /*proposal*/ ctx[0].winner.length == 0 && /*canVote*/ ctx[3] == true;
 
-			if (/*proposal*/ ctx[0].winner != false && /*proposal*/ ctx[0].winner != true) {
+			if (show_if) {
 				if (if_block) {
 					if_block.p(ctx, dirty);
 				} else {
@@ -14721,6 +13321,9 @@ function create_fragment$3(ctx) {
 		o: noop,
 		d: function destroy(detaching) {
 			if (detaching) detach_dev(div8);
+			info.block.d();
+			info.token = null;
+			info = null;
 			if (if_block) if_block.d();
 		}
 	};
@@ -14740,33 +13343,38 @@ function instance$3($$self, $$props, $$invalidate) {
 	let { $$slots: slots = {}, $$scope } = $$props;
 	validate_slots('Proposal', slots, []);
 	let { proposal } = $$props;
-	var status = "";
-	var statusCss = "";
+	var state = "";
+	var stateCss = "";
+	var canVote = true;
 
-	if (proposal.winner == false) {
-		status = "REJECTED";
-		statusCss = "bg-red-400";
-	} else if (proposal.winner == true) {
-		status = "APPROVED";
-		statusCss = "bg-green-400";
+	if (proposal.winner && Array.isArray(proposal.winner) && proposal.winner[0] == 0) {
+		state = "REJECTED";
+		stateCss = "bg-red-400";
+	} else if (proposal.winner && Array.isArray(proposal.winner) && proposal.winner[0] == 1) {
+		state = "APPROVED";
+		stateCss = "bg-green-400";
 	} else {
-		status = "OPEN";
-		statusCss = "bg-yellow-400";
+		state = "OPEN";
+		stateCss = "bg-yellow-400";
 	}
 
 	console.log(proposal);
 
 	async function voteFor(id, vote) {
+		console.log("calling voteFor function");
 		let dao = get_store_value(daoActor);
 
 		if (!dao) {
 			console.log("dao not loaded");
 			return;
+		} else {
+			console.log("dao loaded successfull");
 		}
+
 		let res = await dao.vote(id, vote);
+		console.log(res);
 
 		if (res > 0) {
-			console.log(res);
 			return res;
 		} else {
 			console.log("err " + res.Err);
@@ -14774,21 +13382,44 @@ function instance$3($$self, $$props, $$invalidate) {
 		}
 	}
 
+	async function getVoteFromPrincipal(proposalId) {
+		let dao = get_store_value(daoActor);
+
+		if (!dao) {
+			console.log("dao not loaded");
+			return;
+		}
+		console.log("ready to call");
+		let res = dao.getVoteFromPrincipal(proposalId);
+
+		res.then(r => {
+			if (r && Array.isArray(r)) {
+				console.log("called");
+				let vote = r[0];
+				console.log(r);
+				return vote;
+			} else {
+				console.log("err " + res.Err);
+				throw new Error(res.Err);
+			}
+		}).catch(e => {
+			console.log(e);
+		});
+	}
+
+	let promiseVote = getVoteFromPrincipal(proposal.id);
 	var promise;
 
-	const handleVote = (id, vote) => {
-		console.log("vote Clicked - " + id, vote);
-		promise = voteFor(id, vote);
-	};
-
+	function handleVote(obj) {
+		console.log("vote Clicked - " + obj.id, obj.vote);
+		$$invalidate(4, promise = voteFor(obj.id, obj.vote));
+		$$invalidate(3, canVote = false);
+	}
 	const writable_props = ['proposal'];
 
 	Object.keys($$props).forEach(key => {
 		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== '$$' && key !== 'slot') console_1$2.warn(`<Proposal> was created with unknown prop '${key}'`);
 	});
-
-	const click_handler = () => handleVote(proposal.id, true);
-	const click_handler_1 = () => handleVote(proposal.id, false);
 
 	$$self.$$set = $$props => {
 		if ('proposal' in $$props) $$invalidate(0, proposal = $$props.proposal);
@@ -14796,34 +13427,38 @@ function instance$3($$self, $$props, $$invalidate) {
 
 	$$self.$capture_state = () => ({
 		daoActor,
-		principal,
 		get: get_store_value,
 		proposal,
-		status,
-		statusCss,
+		state,
+		stateCss,
+		canVote,
 		voteFor,
+		getVoteFromPrincipal,
+		promiseVote,
 		promise,
 		handleVote
 	});
 
 	$$self.$inject_state = $$props => {
 		if ('proposal' in $$props) $$invalidate(0, proposal = $$props.proposal);
-		if ('status' in $$props) $$invalidate(1, status = $$props.status);
-		if ('statusCss' in $$props) $$invalidate(2, statusCss = $$props.statusCss);
-		if ('promise' in $$props) promise = $$props.promise;
+		if ('state' in $$props) $$invalidate(1, state = $$props.state);
+		if ('stateCss' in $$props) $$invalidate(2, stateCss = $$props.stateCss);
+		if ('canVote' in $$props) $$invalidate(3, canVote = $$props.canVote);
+		if ('promiseVote' in $$props) $$invalidate(5, promiseVote = $$props.promiseVote);
+		if ('promise' in $$props) $$invalidate(4, promise = $$props.promise);
 	};
 
 	if ($$props && "$$inject" in $$props) {
 		$$self.$inject_state($$props.$$inject);
 	}
 
-	return [proposal, status, statusCss, handleVote, click_handler, click_handler_1];
+	return [proposal, state, stateCss, canVote, promise, promiseVote, handleVote];
 }
 
 class Proposal extends SvelteComponentDev {
 	constructor(options) {
 		super(options);
-		init$1(this, options, instance$3, create_fragment$3, safe_not_equal, { proposal: 0 });
+		init(this, options, instance$3, create_fragment$3, safe_not_equal, { proposal: 0 });
 
 		dispatch_dev("SvelteRegisterComponent", {
 			component: this,
@@ -15402,7 +14037,7 @@ function instance$2($$self, $$props, $$invalidate) {
 class View extends SvelteComponentDev {
 	constructor(options) {
 		super(options);
-		init$1(this, options, instance$2, create_fragment$2, safe_not_equal, {});
+		init(this, options, instance$2, create_fragment$2, safe_not_equal, {});
 
 		dispatch_dev("SvelteRegisterComponent", {
 			component: this,
@@ -15427,7 +14062,7 @@ function create_else_block(ctx) {
 			p = element("p");
 			p.textContent = "Connect to a wallet first.";
 			attr_dev(p, "class", "example-disabled");
-			add_location(p, file$1, 64, 10, 2080);
+			add_location(p, file$1, 64, 10, 2095);
 		},
 		m: function mount(target, anchor) {
 			insert_dev(target, p, anchor);
@@ -15494,16 +14129,16 @@ function create_if_block$1(ctx) {
 			button.textContent = "Submit";
 			attr_dev(h1, "class", "slogan w-full text-3xl font-bold");
 			add_location(h1, file$1, 35, 10, 926);
-			attr_dev(input, "class", "w-full border border-black px-2 py-2");
+			attr_dev(input, "class", "w-full border border-black text-black px-2 py-2");
 			attr_dev(input, "placeholder", "Proposal title");
-			add_location(input, file$1, 50, 12, 1478);
-			attr_dev(textarea, "class", "w-full border border-black px-2 py-2");
+			add_location(input, file$1, 50, 12, 1471);
+			attr_dev(textarea, "class", "w-full border border-black text-black px-2 py-2");
 			attr_dev(textarea, "placeholder", "Proposal description");
-			add_location(textarea, file$1, 54, 12, 1637);
+			add_location(textarea, file$1, 54, 12, 1641);
 			attr_dev(button, "class", "w-3/4 border bg-white px-4 py-2 text-black hover:border-none hover:bg-lime-400 hover:shadow-hard");
-			add_location(button, file$1, 58, 12, 1820);
+			add_location(button, file$1, 58, 12, 1835);
 			attr_dev(div, "class", "flex w-full flex-wrap gap-y-4 justify-center");
-			add_location(div, file$1, 49, 10, 1407);
+			add_location(div, file$1, 49, 10, 1400);
 		},
 		m: function mount(target, anchor) {
 			insert_dev(target, h1, anchor);
@@ -15592,7 +14227,7 @@ function create_catch_block(ctx) {
 			t = text(t_value);
 			attr_dev(p, "class", "w-full");
 			set_style(p, "color", "red");
-			add_location(p, file$1, 46, 12, 1316);
+			add_location(p, file$1, 46, 12, 1309);
 		},
 		m: function mount(target, anchor) {
 			insert_dev(target, p, anchor);
@@ -15617,10 +14252,10 @@ function create_catch_block(ctx) {
 	return block;
 }
 
-// (40:10) {:then proposal}
+// (40:10) {:then p}
 function create_then_block(ctx) {
 	let if_block_anchor;
-	let if_block = /*proposal*/ ctx[8] && create_if_block_1$1(ctx);
+	let if_block = /*p*/ ctx[8] && create_if_block_1$1(ctx);
 
 	const block = {
 		c: function create() {
@@ -15632,7 +14267,7 @@ function create_then_block(ctx) {
 			insert_dev(target, if_block_anchor, anchor);
 		},
 		p: function update(ctx, dirty) {
-			if (/*proposal*/ ctx[8]) {
+			if (/*p*/ ctx[8]) {
 				if (if_block) {
 					if_block.p(ctx, dirty);
 				} else {
@@ -15655,36 +14290,39 @@ function create_then_block(ctx) {
 		block,
 		id: create_then_block.name,
 		type: "then",
-		source: "(40:10) {:then proposal}",
+		source: "(40:10) {:then p}",
 		ctx
 	});
 
 	return block;
 }
 
-// (41:12) {#if proposal}
+// (41:12) {#if p}
 function create_if_block_1$1(ctx) {
 	let p;
 	let t0;
-	let t1_value = /*proposal*/ ctx[8] + "";
+	let t1_value = /*p*/ ctx[8] + "";
 	let t1;
+	let t2;
 
 	const block = {
 		c: function create() {
 			p = element("p");
-			t0 = text("Proposal submitted: ");
+			t0 = text("Proposal submitted, returned id: ");
 			t1 = text(t1_value);
+			t2 = text("!");
 			attr_dev(p, "class", "w-full");
 			set_style(p, "color", "white");
-			add_location(p, file$1, 41, 14, 1155);
+			add_location(p, file$1, 41, 14, 1141);
 		},
 		m: function mount(target, anchor) {
 			insert_dev(target, p, anchor);
 			append_dev(p, t0);
 			append_dev(p, t1);
+			append_dev(p, t2);
 		},
 		p: function update(ctx, dirty) {
-			if (dirty & /*promise*/ 4 && t1_value !== (t1_value = /*proposal*/ ctx[8] + "")) set_data_dev(t1, t1_value);
+			if (dirty & /*promise*/ 4 && t1_value !== (t1_value = /*p*/ ctx[8] + "")) set_data_dev(t1, t1_value);
 		},
 		d: function destroy(detaching) {
 			if (detaching) detach_dev(p);
@@ -15695,14 +14333,14 @@ function create_if_block_1$1(ctx) {
 		block,
 		id: create_if_block_1$1.name,
 		type: "if",
-		source: "(41:12) {#if proposal}",
+		source: "(41:12) {#if p}",
 		ctx
 	});
 
 	return block;
 }
 
-// (38:26)              <p class="w-full" style="color: white">...waiting</p>           {:then proposal}
+// (38:26)              <p class="w-full" style="color: white">...waiting</p>           {:then p}
 function create_pending_block(ctx) {
 	let p;
 
@@ -15727,7 +14365,7 @@ function create_pending_block(ctx) {
 		block,
 		id: create_pending_block.name,
 		type: "pending",
-		source: "(38:26)              <p class=\\\"w-full\\\" style=\\\"color: white\\\">...waiting</p>           {:then proposal}",
+		source: "(38:26)              <p class=\\\"w-full\\\" style=\\\"color: white\\\">...waiting</p>           {:then p}",
 		ctx
 	});
 
@@ -15883,7 +14521,7 @@ function instance$1($$self, $$props, $$invalidate) {
 class New extends SvelteComponentDev {
 	constructor(options) {
 		super(options);
-		init$1(this, options, instance$1, create_fragment$1, safe_not_equal, {});
+		init(this, options, instance$1, create_fragment$1, safe_not_equal, {});
 
 		dispatch_dev("SvelteRegisterComponent", {
 			component: this,
@@ -16232,7 +14870,7 @@ function instance($$self, $$props, $$invalidate) {
 class App extends SvelteComponentDev {
 	constructor(options) {
 		super(options);
-		init$1(this, options, instance, create_fragment, safe_not_equal, {});
+		init(this, options, instance, create_fragment, safe_not_equal, {});
 
 		dispatch_dev("SvelteRegisterComponent", {
 			component: this,
