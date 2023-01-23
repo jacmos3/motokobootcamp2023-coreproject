@@ -4,11 +4,11 @@
       "main": "src/backend/dao.mo",
       "type": "motoko"
     },
+    
     "ledger": {
       "main": "src/ledger/main.mo",
       "type": "motoko"
     },
-
 
     "frontend": {
       "dependencies": [

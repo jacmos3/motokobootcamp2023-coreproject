@@ -2,6 +2,9 @@
   "backend": {
     "ic": "xdai7-gaaaa-aaaak-aeacq-cai"
   },
+  "frontend": {
+    "ic": "wskwa-6iaaa-aaaak-aeaha-cai"
+  },
   "ledger": {
     "ic": "w3j54-iaaaa-aaaak-aeagq-cai"
   }
