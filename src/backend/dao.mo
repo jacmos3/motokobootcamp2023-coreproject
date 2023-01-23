@@ -66,7 +66,7 @@ actor dao{
 
         // avoid voting from callers with less than 1 votingPowah
         let _votingPowah : Nat = await getVotingPowah(caller);
-        if (_votingPowah == 1)
+        if (_votingPowah <= 1)
             return null;
 
         // avoid voting from users already voted on the given proposal

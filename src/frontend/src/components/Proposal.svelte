@@ -20,7 +20,7 @@
     stateCss = "bg-yellow-400";
   }
 
-  console.log(proposal);
+  //console.log(proposal);
   
   async function voteFor(id, vote) {
     console.log("calling voteFor function");
@@ -50,8 +50,10 @@
       return;
     };
     console.log("ready to call");
-    let res = dao.getVoteFromPrincipal(proposalId);
-    res
+    let res = await dao.getVoteFromPrincipal(proposalId);
+    console.log(res);
+    return res;
+    /*res
     .then((r) =>{
       if (r && Array.isArray(r)) {
         console.log("called");
@@ -65,16 +67,17 @@
     })
     .catch ((e) =>{
       console.log(e);
-    });
+    });*/
     
   }
 
-  let promiseVote = getVoteFromPrincipal(proposal.id);
-  var promise;
+  var promVote = getVoteFromPrincipal(proposal.id);
+  var prom;
 
   function handleVote(obj){
     console.log("vote Clicked - " + obj.id, obj.vote);
-    promise = voteFor(obj.id, obj.vote);
+    prom = voteFor(obj.id, obj.vote);
+    promVote = getVoteFromPrincipal(proposal.id);
     canVote = false;
   };
 
@@ -112,16 +115,16 @@
           <span class="mr-2 align-baseline font-black uppercase">
             ACTION:
           </span>
-          {#await promiseVote}
+          {#await promVote}
             <span  class=" px-2 text-sm text-white" >...waiting</span>
           {:then v}
-            {#if v}
+            {#if v && (Array.isArray(v) && v.length > 0)}
               <span 
-              class="{canVote ? "bg-green-400" : "bg-red-400"} px-2 text-sm text-white">
-              {!canVote ? "You already voted: " + v.vote + " with " + v.votingPowah + " voting powah": "you can vote"}
+              class="bg-red-400 px-2 text-sm text-white">
+              {"You already voted: " + v[0].vote + " with " + v[0].votingPowah + " voting powah"}
             </span>
             {:else}
-            <span class = " px-2 text-sm text-white">hey</span>
+            <span class = "bg-green-400 px-2 text-sm text-white">you can vote {v}</span>
             {/if}
           {:catch error}
             <span class=" px-2 text-sm text-white" >{error.message}</span>
@@ -157,24 +160,25 @@
             Reject
           </button>
         </div>
-      </div>
-      {#await promise}
-          <p class="w-full" style="color: white">...waiting</p>
-        {:then prop}
-          {#if prop && prop > 0}
-            <p class="w-full" style="color: white">
-              Vote submitted! {prop}!
-            </p>
-            {:else}
-            <p class="w-full" style="color: white">
-              Vote Not submited, maybe you already voted here, or proposal has been closed in the meanwhile, or you own too few MB! {prop}!
-            </p>
-          {/if}
-        {:catch error}
-          <p class="w-full" style="color: red">{error.message}</p>
-      {/await}
-      
+      </div> 
     </div>
     {/if}
+    {#await prom}
+    <p class="w-full" style="color: white">...waiting</p>
+  {:then prop}
+    {#if prop && prop > 0}
+      <p class="w-full" style="color: white">
+        Vote submitted! {prop}!
+      </p>
+      {:else}
+      <p class="w-full" style="color: white">
+        -
+      </p>
+    {/if}
+  {:catch error}
+    <p class="w-full" style="color: white">
+      Vote Not submited, maybe you already voted here, or proposal has been closed in the meanwhile, or you own too few MB! Try another proposal!
+    </p>
+{/await}
   </div>
   

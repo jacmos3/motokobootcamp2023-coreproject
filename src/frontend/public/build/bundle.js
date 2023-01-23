@@ -12605,7 +12605,7 @@ class Vote extends SvelteComponentDev {
 const { Error: Error_1$1, console: console_1$2 } = globals;
 const file$3 = "src/components/Proposal.svelte";
 
-// (126:10) {:catch error}
+// (129:10) {:catch error}
 function create_catch_block_1(ctx) {
 	let span;
 	let t_value = /*error*/ ctx[10].message + "";
@@ -12616,13 +12616,15 @@ function create_catch_block_1(ctx) {
 			span = element("span");
 			t = text(t_value);
 			attr_dev(span, "class", "px-2 text-sm text-white");
-			add_location(span, file$3, 126, 12, 3464);
+			add_location(span, file$3, 129, 12, 3563);
 		},
 		m: function mount(target, anchor) {
 			insert_dev(target, span, anchor);
 			append_dev(span, t);
 		},
-		p: noop,
+		p: function update(ctx, dirty) {
+			if (dirty & /*promVote*/ 16 && t_value !== (t_value = /*error*/ ctx[10].message + "")) set_data_dev(t, t_value);
+		},
 		d: function destroy(detaching) {
 			if (detaching) detach_dev(span);
 		}
@@ -12632,23 +12634,26 @@ function create_catch_block_1(ctx) {
 		block,
 		id: create_catch_block_1.name,
 		type: "catch",
-		source: "(126:10) {:catch error}",
+		source: "(129:10) {:catch error}",
 		ctx
 	});
 
 	return block;
 }
 
-// (117:10) {:then v}
+// (120:10) {:then v}
 function create_then_block_1(ctx) {
+	let show_if;
 	let if_block_anchor;
 
 	function select_block_type(ctx, dirty) {
-		if (/*v*/ ctx[11]) return create_if_block_2$1;
+		if (dirty & /*promVote*/ 16) show_if = null;
+		if (show_if == null) show_if = !!(/*v*/ ctx[11] && (Array.isArray(/*v*/ ctx[11]) && /*v*/ ctx[11].length > 0));
+		if (show_if) return create_if_block_2$1;
 		return create_else_block_1$1;
 	}
 
-	let current_block_type = select_block_type(ctx);
+	let current_block_type = select_block_type(ctx, -1);
 	let if_block = current_block_type(ctx);
 
 	const block = {
@@ -12661,7 +12666,17 @@ function create_then_block_1(ctx) {
 			insert_dev(target, if_block_anchor, anchor);
 		},
 		p: function update(ctx, dirty) {
-			if_block.p(ctx, dirty);
+			if (current_block_type === (current_block_type = select_block_type(ctx, dirty)) && if_block) {
+				if_block.p(ctx, dirty);
+			} else {
+				if_block.d(1);
+				if_block = current_block_type(ctx);
+
+				if (if_block) {
+					if_block.c();
+					if_block.m(if_block_anchor.parentNode, if_block_anchor);
+				}
+			}
 		},
 		d: function destroy(detaching) {
 			if_block.d(detaching);
@@ -12673,28 +12688,36 @@ function create_then_block_1(ctx) {
 		block,
 		id: create_then_block_1.name,
 		type: "then",
-		source: "(117:10) {:then v}",
+		source: "(120:10) {:then v}",
 		ctx
 	});
 
 	return block;
 }
 
-// (123:12) {:else}
+// (126:12) {:else}
 function create_else_block_1$1(ctx) {
 	let span;
+	let t0;
+	let t1_value = /*v*/ ctx[11] + "";
+	let t1;
 
 	const block = {
 		c: function create() {
 			span = element("span");
-			span.textContent = "hey";
-			attr_dev(span, "class", "px-2 text-sm text-white");
-			add_location(span, file$3, 123, 12, 3357);
+			t0 = text("you can vote ");
+			t1 = text(t1_value);
+			attr_dev(span, "class", "bg-green-400 px-2 text-sm text-white");
+			add_location(span, file$3, 126, 12, 3431);
 		},
 		m: function mount(target, anchor) {
 			insert_dev(target, span, anchor);
+			append_dev(span, t0);
+			append_dev(span, t1);
 		},
-		p: noop,
+		p: function update(ctx, dirty) {
+			if (dirty & /*promVote*/ 16 && t1_value !== (t1_value = /*v*/ ctx[11] + "")) set_data_dev(t1, t1_value);
+		},
 		d: function destroy(detaching) {
 			if (detaching) detach_dev(span);
 		}
@@ -12704,43 +12727,32 @@ function create_else_block_1$1(ctx) {
 		block,
 		id: create_else_block_1$1.name,
 		type: "else",
-		source: "(123:12) {:else}",
+		source: "(126:12) {:else}",
 		ctx
 	});
 
 	return block;
 }
 
-// (118:12) {#if v}
+// (121:12) {#if v && (Array.isArray(v) && v.length > 0)}
 function create_if_block_2$1(ctx) {
 	let span;
-
-	let t_value = (!/*canVote*/ ctx[3]
-	? "You already voted: " + /*v*/ ctx[11].vote + " with " + /*v*/ ctx[11].votingPowah + " voting powah"
-	: "you can vote") + "";
-
+	let t_value = "You already voted: " + /*v*/ ctx[11][0].vote + " with " + /*v*/ ctx[11][0].votingPowah + " voting powah" + "";
 	let t;
-	let span_class_value;
 
 	const block = {
 		c: function create() {
 			span = element("span");
 			t = text(t_value);
-			attr_dev(span, "class", span_class_value = "" + ((/*canVote*/ ctx[3] ? "bg-green-400" : "bg-red-400") + " px-2 text-sm text-white"));
-			add_location(span, file$3, 118, 14, 3090);
+			attr_dev(span, "class", "bg-red-400 px-2 text-sm text-white");
+			add_location(span, file$3, 121, 14, 3216);
 		},
 		m: function mount(target, anchor) {
 			insert_dev(target, span, anchor);
 			append_dev(span, t);
 		},
 		p: function update(ctx, dirty) {
-			if (dirty & /*canVote*/ 8 && t_value !== (t_value = (!/*canVote*/ ctx[3]
-			? "You already voted: " + /*v*/ ctx[11].vote + " with " + /*v*/ ctx[11].votingPowah + " voting powah"
-			: "you can vote") + "")) set_data_dev(t, t_value);
-
-			if (dirty & /*canVote*/ 8 && span_class_value !== (span_class_value = "" + ((/*canVote*/ ctx[3] ? "bg-green-400" : "bg-red-400") + " px-2 text-sm text-white"))) {
-				attr_dev(span, "class", span_class_value);
-			}
+			if (dirty & /*promVote*/ 16 && t_value !== (t_value = "You already voted: " + /*v*/ ctx[11][0].vote + " with " + /*v*/ ctx[11][0].votingPowah + " voting powah" + "")) set_data_dev(t, t_value);
 		},
 		d: function destroy(detaching) {
 			if (detaching) detach_dev(span);
@@ -12751,14 +12763,14 @@ function create_if_block_2$1(ctx) {
 		block,
 		id: create_if_block_2$1.name,
 		type: "if",
-		source: "(118:12) {#if v}",
+		source: "(121:12) {#if v && (Array.isArray(v) && v.length > 0)}",
 		ctx
 	});
 
 	return block;
 }
 
-// (115:30)              <span  class=" px-2 text-sm text-white" >...waiting</span>           {:then v}
+// (118:27)              <span  class=" px-2 text-sm text-white" >...waiting</span>           {:then v}
 function create_pending_block_1(ctx) {
 	let span;
 
@@ -12767,7 +12779,7 @@ function create_pending_block_1(ctx) {
 			span = element("span");
 			span.textContent = "...waiting";
 			attr_dev(span, "class", "px-2 text-sm text-white");
-			add_location(span, file$3, 115, 12, 2977);
+			add_location(span, file$3, 118, 12, 3065);
 		},
 		m: function mount(target, anchor) {
 			insert_dev(target, span, anchor);
@@ -12782,15 +12794,15 @@ function create_pending_block_1(ctx) {
 		block,
 		id: create_pending_block_1.name,
 		type: "pending",
-		source: "(115:30)              <span  class=\\\" px-2 text-sm text-white\\\" >...waiting</span>           {:then v}",
+		source: "(118:27)              <span  class=\\\" px-2 text-sm text-white\\\" >...waiting</span>           {:then v}",
 		ctx
 	});
 
 	return block;
 }
 
-// (141:4) {#if proposal && proposal.winner && Array.isArray(proposal.winner) && proposal.winner.length == 0 && canVote == true}
-function create_if_block$3(ctx) {
+// (144:4) {#if proposal && proposal.winner && Array.isArray(proposal.winner) && proposal.winner.length == 0 && canVote == true}
+function create_if_block_1$3(ctx) {
 	let div3;
 	let div2;
 	let div0;
@@ -12798,24 +12810,8 @@ function create_if_block$3(ctx) {
 	let t1;
 	let div1;
 	let button1;
-	let t3;
-	let promise_1;
 	let mounted;
 	let dispose;
-
-	let info = {
-		ctx,
-		current: null,
-		token: null,
-		hasCatch: true,
-		pending: create_pending_block$2,
-		then: create_then_block$2,
-		catch: create_catch_block$2,
-		value: 9,
-		error: 10
-	};
-
-	handle_promise(promise_1 = /*promise*/ ctx[4], info);
 
 	const block = {
 		c: function create() {
@@ -12828,20 +12824,18 @@ function create_if_block$3(ctx) {
 			div1 = element("div");
 			button1 = element("button");
 			button1.textContent = "Reject";
-			t3 = space();
-			info.block.c();
 			attr_dev(button0, "class", "w-full bg-green-200 hover:bg-green-400 text-black hover:text-black px-4 py-2 hover:shadow-hard text-sm hover:uppercase hover:font-black");
-			add_location(button0, file$3, 144, 10, 4044);
+			add_location(button0, file$3, 147, 10, 4143);
 			attr_dev(div0, "class", "w-1/2");
-			add_location(div0, file$3, 143, 8, 4014);
+			add_location(div0, file$3, 146, 8, 4113);
 			attr_dev(button1, "class", "w-full bg-red-200 hover:bg-red-500 text-black hover:text-black px-4 py-2 hover:shadow-hard text-sm hover:uppercase hover:font-black");
-			add_location(button1, file$3, 152, 10, 4395);
+			add_location(button1, file$3, 155, 10, 4494);
 			attr_dev(div1, "class", "w-1/2 flex gap-x-2");
-			add_location(div1, file$3, 151, 8, 4352);
+			add_location(div1, file$3, 154, 8, 4451);
 			attr_dev(div2, "class", "w-full flex gap-x-2");
-			add_location(div2, file$3, 142, 6, 3972);
+			add_location(div2, file$3, 145, 6, 4071);
 			attr_dev(div3, "class", "flex flex-wrap w-full gap-y-2");
-			add_location(div3, file$3, 141, 4, 3922);
+			add_location(div3, file$3, 144, 4, 4021);
 		},
 		m: function mount(target, anchor) {
 			insert_dev(target, div3, anchor);
@@ -12851,10 +12845,6 @@ function create_if_block$3(ctx) {
 			append_dev(div2, t1);
 			append_dev(div2, div1);
 			append_dev(div1, button1);
-			append_dev(div3, t3);
-			info.block.m(div3, info.anchor = null);
-			info.mount = () => div3;
-			info.anchor = null;
 
 			if (!mounted) {
 				dispose = [
@@ -12885,17 +12875,9 @@ function create_if_block$3(ctx) {
 		},
 		p: function update(new_ctx, dirty) {
 			ctx = new_ctx;
-			info.ctx = ctx;
-
-			if (dirty & /*promise*/ 16 && promise_1 !== (promise_1 = /*promise*/ ctx[4]) && handle_promise(promise_1, info)) ; else {
-				update_await_block_branch(info, ctx, dirty);
-			}
 		},
 		d: function destroy(detaching) {
 			if (detaching) detach_dev(div3);
-			info.block.d();
-			info.token = null;
-			info = null;
 			mounted = false;
 			run_all(dispose);
 		}
@@ -12903,36 +12885,31 @@ function create_if_block$3(ctx) {
 
 	dispatch_dev("SvelteRegisterBlock", {
 		block,
-		id: create_if_block$3.name,
+		id: create_if_block_1$3.name,
 		type: "if",
-		source: "(141:4) {#if proposal && proposal.winner && Array.isArray(proposal.winner) && proposal.winner.length == 0 && canVote == true}",
+		source: "(144:4) {#if proposal && proposal.winner && Array.isArray(proposal.winner) && proposal.winner.length == 0 && canVote == true}",
 		ctx
 	});
 
 	return block;
 }
 
-// (173:8) {:catch error}
+// (178:2) {:catch error}
 function create_catch_block$2(ctx) {
 	let p;
-	let t_value = /*error*/ ctx[10].message + "";
-	let t;
 
 	const block = {
 		c: function create() {
 			p = element("p");
-			t = text(t_value);
+			p.textContent = "Vote Not submited, maybe you already voted here, or proposal has been closed in the meanwhile, or you own too few MB! Try another proposal!";
 			attr_dev(p, "class", "w-full");
-			set_style(p, "color", "red");
-			add_location(p, file$3, 173, 10, 5231);
+			set_style(p, "color", "white");
+			add_location(p, file$3, 178, 4, 5145);
 		},
 		m: function mount(target, anchor) {
 			insert_dev(target, p, anchor);
-			append_dev(p, t);
 		},
-		p: function update(ctx, dirty) {
-			if (dirty & /*promise*/ 16 && t_value !== (t_value = /*error*/ ctx[10].message + "")) set_data_dev(t, t_value);
-		},
+		p: noop,
 		d: function destroy(detaching) {
 			if (detaching) detach_dev(p);
 		}
@@ -12942,19 +12919,19 @@ function create_catch_block$2(ctx) {
 		block,
 		id: create_catch_block$2.name,
 		type: "catch",
-		source: "(173:8) {:catch error}",
+		source: "(178:2) {:catch error}",
 		ctx
 	});
 
 	return block;
 }
 
-// (163:8) {:then prop}
+// (168:2) {:then prop}
 function create_then_block$2(ctx) {
 	let if_block_anchor;
 
 	function select_block_type_1(ctx, dirty) {
-		if (/*prop*/ ctx[9] && /*prop*/ ctx[9] > 0) return create_if_block_1$3;
+		if (/*prop*/ ctx[9] && /*prop*/ ctx[9] > 0) return create_if_block$3;
 		return create_else_block$2;
 	}
 
@@ -12993,40 +12970,29 @@ function create_then_block$2(ctx) {
 		block,
 		id: create_then_block$2.name,
 		type: "then",
-		source: "(163:8) {:then prop}",
+		source: "(168:2) {:then prop}",
 		ctx
 	});
 
 	return block;
 }
 
-// (168:12) {:else}
+// (173:6) {:else}
 function create_else_block$2(ctx) {
 	let p;
-	let t0;
-	let t1_value = /*prop*/ ctx[9] + "";
-	let t1;
-	let t2;
 
 	const block = {
 		c: function create() {
 			p = element("p");
-			t0 = text("Vote Not submited, maybe you already voted here, or proposal has been closed in the meanwhile, or you own too few MB! ");
-			t1 = text(t1_value);
-			t2 = text("!");
+			p.textContent = "-";
 			attr_dev(p, "class", "w-full");
 			set_style(p, "color", "white");
-			add_location(p, file$3, 168, 12, 4985);
+			add_location(p, file$3, 173, 6, 5053);
 		},
 		m: function mount(target, anchor) {
 			insert_dev(target, p, anchor);
-			append_dev(p, t0);
-			append_dev(p, t1);
-			append_dev(p, t2);
 		},
-		p: function update(ctx, dirty) {
-			if (dirty & /*promise*/ 16 && t1_value !== (t1_value = /*prop*/ ctx[9] + "")) set_data_dev(t1, t1_value);
-		},
+		p: noop,
 		d: function destroy(detaching) {
 			if (detaching) detach_dev(p);
 		}
@@ -13036,15 +13002,15 @@ function create_else_block$2(ctx) {
 		block,
 		id: create_else_block$2.name,
 		type: "else",
-		source: "(168:12) {:else}",
+		source: "(173:6) {:else}",
 		ctx
 	});
 
 	return block;
 }
 
-// (164:10) {#if prop && prop > 0}
-function create_if_block_1$3(ctx) {
+// (169:4) {#if prop && prop > 0}
+function create_if_block$3(ctx) {
 	let p;
 	let t0;
 	let t1_value = /*prop*/ ctx[9] + "";
@@ -13059,7 +13025,7 @@ function create_if_block_1$3(ctx) {
 			t2 = text("!");
 			attr_dev(p, "class", "w-full");
 			set_style(p, "color", "white");
-			add_location(p, file$3, 164, 12, 4858);
+			add_location(p, file$3, 169, 6, 4950);
 		},
 		m: function mount(target, anchor) {
 			insert_dev(target, p, anchor);
@@ -13068,7 +13034,7 @@ function create_if_block_1$3(ctx) {
 			append_dev(p, t2);
 		},
 		p: function update(ctx, dirty) {
-			if (dirty & /*promise*/ 16 && t1_value !== (t1_value = /*prop*/ ctx[9] + "")) set_data_dev(t1, t1_value);
+			if (dirty & /*prom*/ 32 && t1_value !== (t1_value = /*prop*/ ctx[9] + "")) set_data_dev(t1, t1_value);
 		},
 		d: function destroy(detaching) {
 			if (detaching) detach_dev(p);
@@ -13077,16 +13043,16 @@ function create_if_block_1$3(ctx) {
 
 	dispatch_dev("SvelteRegisterBlock", {
 		block,
-		id: create_if_block_1$3.name,
+		id: create_if_block$3.name,
 		type: "if",
-		source: "(164:10) {#if prop && prop > 0}",
+		source: "(169:4) {#if prop && prop > 0}",
 		ctx
 	});
 
 	return block;
 }
 
-// (161:22)            <p class="w-full" style="color: white">...waiting</p>         {:then prop}
+// (166:17)      <p class="w-full" style="color: white">...waiting</p>   {:then prop}
 function create_pending_block$2(ctx) {
 	let p;
 
@@ -13096,7 +13062,7 @@ function create_pending_block$2(ctx) {
 			p.textContent = "...waiting";
 			attr_dev(p, "class", "w-full");
 			set_style(p, "color", "white");
-			add_location(p, file$3, 161, 10, 4738);
+			add_location(p, file$3, 166, 4, 4848);
 		},
 		m: function mount(target, anchor) {
 			insert_dev(target, p, anchor);
@@ -13111,7 +13077,7 @@ function create_pending_block$2(ctx) {
 		block,
 		id: create_pending_block$2.name,
 		type: "pending",
-		source: "(161:22)            <p class=\\\"w-full\\\" style=\\\"color: white\\\">...waiting</p>         {:then prop}",
+		source: "(166:17)      <p class=\\\"w-full\\\" style=\\\"color: white\\\">...waiting</p>   {:then prop}",
 		ctx
 	});
 
@@ -13146,6 +13112,7 @@ function create_fragment$3(ctx) {
 	let div3;
 	let span6;
 	let t13;
+	let promise;
 	let t14;
 	let div5;
 	let t15_value = /*proposal*/ ctx[0].title + "";
@@ -13157,6 +13124,8 @@ function create_fragment$3(ctx) {
 	let t17;
 	let t18;
 	let show_if = /*proposal*/ ctx[0] && /*proposal*/ ctx[0].winner && Array.isArray(/*proposal*/ ctx[0].winner) && /*proposal*/ ctx[0].winner.length == 0 && /*canVote*/ ctx[3] == true;
+	let t19;
+	let promise_1;
 
 	let info = {
 		ctx,
@@ -13170,8 +13139,22 @@ function create_fragment$3(ctx) {
 		error: 10
 	};
 
-	handle_promise(/*promiseVote*/ ctx[5], info);
-	let if_block = show_if && create_if_block$3(ctx);
+	handle_promise(promise = /*promVote*/ ctx[4], info);
+	let if_block = show_if && create_if_block_1$3(ctx);
+
+	let info_1 = {
+		ctx,
+		current: null,
+		token: null,
+		hasCatch: true,
+		pending: create_pending_block$2,
+		then: create_then_block$2,
+		catch: create_catch_block$2,
+		value: 9,
+		error: 10
+	};
+
+	handle_promise(promise_1 = /*prom*/ ctx[5], info_1);
 
 	const block = {
 		c: function create() {
@@ -13213,40 +13196,42 @@ function create_fragment$3(ctx) {
 			t17 = text(t17_value);
 			t18 = space();
 			if (if_block) if_block.c();
+			t19 = space();
+			info_1.block.c();
 			attr_dev(span0, "class", "mr-2 align-baseline font-black uppercase");
-			add_location(span0, file$3, 86, 10, 2049);
+			add_location(span0, file$3, 89, 10, 2140);
 			attr_dev(span1, "class", "bg-black px-2 text-sm text-white");
-			add_location(span1, file$3, 89, 10, 2149);
+			add_location(span1, file$3, 92, 10, 2240);
 			attr_dev(div0, "class", "flex items-center");
-			add_location(div0, file$3, 85, 8, 2007);
+			add_location(div0, file$3, 88, 8, 2098);
 			attr_dev(span2, "class", "mr-2 align-baseline font-black uppercase");
-			add_location(span2, file$3, 94, 10, 2306);
+			add_location(span2, file$3, 97, 10, 2397);
 			attr_dev(span3, "class", "bg-black px-2 text-sm text-white");
-			add_location(span3, file$3, 97, 10, 2410);
+			add_location(span3, file$3, 100, 10, 2501);
 			attr_dev(div1, "class", "flex items-center");
-			add_location(div1, file$3, 93, 8, 2264);
+			add_location(div1, file$3, 96, 8, 2355);
 			attr_dev(span4, "class", "mr-2 align-baseline font-black uppercase");
-			add_location(span4, file$3, 102, 10, 2571);
+			add_location(span4, file$3, 105, 10, 2662);
 			attr_dev(span5, "class", span5_class_value = "" + (/*stateCss*/ ctx[2] + " px-2 text-sm text-white"));
-			add_location(span5, file$3, 105, 10, 2674);
+			add_location(span5, file$3, 108, 10, 2765);
 			attr_dev(div2, "class", "flex items-center");
-			add_location(div2, file$3, 101, 8, 2529);
+			add_location(div2, file$3, 104, 8, 2620);
 			attr_dev(span6, "class", "mr-2 align-baseline font-black uppercase");
-			add_location(span6, file$3, 111, 10, 2840);
+			add_location(span6, file$3, 114, 10, 2931);
 			attr_dev(div3, "class", "flex items-center");
-			add_location(div3, file$3, 110, 8, 2798);
+			add_location(div3, file$3, 113, 8, 2889);
 			attr_dev(div4, "class", "flex items-center gap-y-2 gap-x-2");
-			add_location(div4, file$3, 84, 6, 1951);
+			add_location(div4, file$3, 87, 6, 2042);
 			attr_dev(div5, "class", "flex items-center gap-y-2");
-			add_location(div5, file$3, 132, 6, 3592);
+			add_location(div5, file$3, 135, 6, 3691);
 			attr_dev(div6, "class", "w-full mb-2");
-			add_location(div6, file$3, 83, 4, 1919);
+			add_location(div6, file$3, 86, 4, 2010);
 			attr_dev(p, "class", "w-full");
-			add_location(p, file$3, 138, 6, 3740);
+			add_location(p, file$3, 141, 6, 3839);
 			attr_dev(div7, "class", "flex flex-wrap gap-y-2 mb-2");
-			add_location(div7, file$3, 137, 4, 3692);
+			add_location(div7, file$3, 140, 4, 3791);
 			attr_dev(div8, "class", "flex flex-wrap gap-y-4 text-white border border-black p-5 m-5");
-			add_location(div8, file$3, 82, 2, 1839);
+			add_location(div8, file$3, 85, 2, 1930);
 		},
 		l: function claim(nodes) {
 			throw new Error_1$1("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -13288,6 +13273,10 @@ function create_fragment$3(ctx) {
 			append_dev(p, t17);
 			append_dev(div8, t18);
 			if (if_block) if_block.m(div8, null);
+			append_dev(div8, t19);
+			info_1.block.m(div8, info_1.anchor = null);
+			info_1.mount = () => div8;
+			info_1.anchor = null;
 		},
 		p: function update(new_ctx, [dirty]) {
 			ctx = new_ctx;
@@ -13299,7 +13288,12 @@ function create_fragment$3(ctx) {
 				attr_dev(span5, "class", span5_class_value);
 			}
 
-			update_await_block_branch(info, ctx, dirty);
+			info.ctx = ctx;
+
+			if (dirty & /*promVote*/ 16 && promise !== (promise = /*promVote*/ ctx[4]) && handle_promise(promise, info)) ; else {
+				update_await_block_branch(info, ctx, dirty);
+			}
+
 			if (dirty & /*proposal*/ 1 && t15_value !== (t15_value = /*proposal*/ ctx[0].title + "")) set_data_dev(t15, t15_value);
 			if (dirty & /*proposal*/ 1 && t17_value !== (t17_value = /*proposal*/ ctx[0].description + "")) set_data_dev(t17, t17_value);
 			if (dirty & /*proposal, canVote*/ 9) show_if = /*proposal*/ ctx[0] && /*proposal*/ ctx[0].winner && Array.isArray(/*proposal*/ ctx[0].winner) && /*proposal*/ ctx[0].winner.length == 0 && /*canVote*/ ctx[3] == true;
@@ -13308,13 +13302,19 @@ function create_fragment$3(ctx) {
 				if (if_block) {
 					if_block.p(ctx, dirty);
 				} else {
-					if_block = create_if_block$3(ctx);
+					if_block = create_if_block_1$3(ctx);
 					if_block.c();
-					if_block.m(div8, null);
+					if_block.m(div8, t19);
 				}
 			} else if (if_block) {
 				if_block.d(1);
 				if_block = null;
+			}
+
+			info_1.ctx = ctx;
+
+			if (dirty & /*prom*/ 32 && promise_1 !== (promise_1 = /*prom*/ ctx[5]) && handle_promise(promise_1, info_1)) ; else {
+				update_await_block_branch(info_1, ctx, dirty);
 			}
 		},
 		i: noop,
@@ -13325,6 +13325,9 @@ function create_fragment$3(ctx) {
 			info.token = null;
 			info = null;
 			if (if_block) if_block.d();
+			info_1.block.d();
+			info_1.token = null;
+			info_1 = null;
 		}
 	};
 
@@ -13358,8 +13361,7 @@ function instance$3($$self, $$props, $$invalidate) {
 		stateCss = "bg-yellow-400";
 	}
 
-	console.log(proposal);
-
+	//console.log(proposal);
 	async function voteFor(id, vote) {
 		console.log("calling voteFor function");
 		let dao = get_store_value(daoActor);
@@ -13390,29 +13392,32 @@ function instance$3($$self, $$props, $$invalidate) {
 			return;
 		}
 		console.log("ready to call");
-		let res = dao.getVoteFromPrincipal(proposalId);
+		let res = await dao.getVoteFromPrincipal(proposalId);
+		console.log(res);
+		return res;
+	} /*res
+.then((r) =>{
+  if (r && Array.isArray(r)) {
+    console.log("called");
+    let vote = r[0];
+    console.log(r);
+    return vote;
+  } else {
+    console.log("err "+res.Err);
+    throw new Error(res.Err);
+  }
+})
+.catch ((e) =>{
+  console.log(e);
+});*/
 
-		res.then(r => {
-			if (r && Array.isArray(r)) {
-				console.log("called");
-				let vote = r[0];
-				console.log(r);
-				return vote;
-			} else {
-				console.log("err " + res.Err);
-				throw new Error(res.Err);
-			}
-		}).catch(e => {
-			console.log(e);
-		});
-	}
-
-	let promiseVote = getVoteFromPrincipal(proposal.id);
-	var promise;
+	var promVote = getVoteFromPrincipal(proposal.id);
+	var prom;
 
 	function handleVote(obj) {
 		console.log("vote Clicked - " + obj.id, obj.vote);
-		$$invalidate(4, promise = voteFor(obj.id, obj.vote));
+		$$invalidate(5, prom = voteFor(obj.id, obj.vote));
+		$$invalidate(4, promVote = getVoteFromPrincipal(proposal.id));
 		$$invalidate(3, canVote = false);
 	}
 	const writable_props = ['proposal'];
@@ -13434,8 +13439,8 @@ function instance$3($$self, $$props, $$invalidate) {
 		canVote,
 		voteFor,
 		getVoteFromPrincipal,
-		promiseVote,
-		promise,
+		promVote,
+		prom,
 		handleVote
 	});
 
@@ -13444,15 +13449,15 @@ function instance$3($$self, $$props, $$invalidate) {
 		if ('state' in $$props) $$invalidate(1, state = $$props.state);
 		if ('stateCss' in $$props) $$invalidate(2, stateCss = $$props.stateCss);
 		if ('canVote' in $$props) $$invalidate(3, canVote = $$props.canVote);
-		if ('promiseVote' in $$props) $$invalidate(5, promiseVote = $$props.promiseVote);
-		if ('promise' in $$props) $$invalidate(4, promise = $$props.promise);
+		if ('promVote' in $$props) $$invalidate(4, promVote = $$props.promVote);
+		if ('prom' in $$props) $$invalidate(5, prom = $$props.prom);
 	};
 
 	if ($$props && "$$inject" in $$props) {
 		$$self.$inject_state($$props.$$inject);
 	}
 
-	return [proposal, state, stateCss, canVote, promise, promiseVote, handleVote];
+	return [proposal, state, stateCss, canVote, promVote, prom, handleVote];
 }
 
 class Proposal extends SvelteComponentDev {
